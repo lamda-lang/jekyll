@@ -1,6 +1,14 @@
-(ns jekyll.core)
+(ns jekyll.core
+  (:use jekyll.parser))
 
-(defn foo
-  "I don't do a whole lot."
-  [x]
-  (println x "Hello, World!"))
+(defn call-stage
+  [stage input])
+
+(defn call-stages
+  [start-stage end-stage input])
+
+(defn all-stages
+  [input])
+
+(def stages
+  [])
