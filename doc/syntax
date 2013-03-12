@@ -1,0 +1,43 @@
+nothing = nil
+yes = true
+no = false
+name = "foo"
+id = 'bar'
+age = 12
+length = 12.1
+
+list = [1 2 3]
+set = (1 2 3)
+map = {'name':1 'two':2 'three':3}
+
+list = [x for x:generator if true]
+set = (x for x:generator if true)
+map = {x:y for x:generator if true}
+
+range = 1..3
+range = 1..
+range = ..3
+
+call = sum(1)
+element = list[1]
+module = math.sum
+
+lambda = (x:1)
+
+condition = when
+  true: 1
+  false: 0
+end
+
+condition = case name
+  "Johannes" if true: "Auer"
+  "Susan" if false: "Ismail"
+end
+
+f(x)
+  if true = 1
+  if false = 2
+  
+x = 1 where
+  y = 2
+end
