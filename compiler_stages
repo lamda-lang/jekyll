@@ -1,0 +1,14 @@
+COMPILER STAGES
+
+1. Read File
+	input: path to file
+   	output: string
+   
+2. Scanner
+	input: string
+	output: token-list
+
+3. Parser
+	input: token-list
+	output: AST 
+	
