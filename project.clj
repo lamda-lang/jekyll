@@ -5,4 +5,4 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.5.0"]
                  [com.lithinos/amotoen "0.2.0-SNAPSHOT"]
-                 [midje "1.4.0"]])
+                 [midje "1.5.0"]])
