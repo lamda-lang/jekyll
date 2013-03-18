@@ -1,31 +1,35 @@
 (ns jekyll.parser
-  (:use [com.lithinos.amotoen.core :only [pegs lpegs pegasus wrap-string]] ))
+  (:use [jekyll.pegasus :only [pegs lpegs pegasus wrap-string]] ))
 
 
 (def grammar
-  {:_* '(* (| \newline \return \tab \space))
-   :Namespace [ :_* '(* :Definition :_*) :$]
-   :Definition [ :Identity :_* \= :_* :Expression :_* ]
+  {:_* '(* :Whitespace)
+   :Whitespace '(| \newline \return \tab \space)
+   :Namespace [ :_* '(* :Definition '(| :Whitespace :$) :_*) :$]
+   :Definition [ :Identity :_* \= :_* :Expression ]
    :Identity [ :Symbol ]
-   :Symbol '(* :Char)
-   :Char (lpegs  '| "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")
-   :ExtendedChar (lpegs '| " -!@#$%^&*()+=[]{}\\|/?.,;:'<>")
-   :Expression '(| :Value :Range :Symbol)
-   :Value '(| :Keyword :Integer :Float :String :Nil :Boolean)
-   :Range '(| [ \. \. :Integer]
-              [:Integer \. \. :Integer]
-              [:Integer \. \.])
-   :String [\" '(* (| :Char :ExtendedChar)) \"]
+   :Symbol [:Char '(* (| :Char :Digit))]
+   :Char (lpegs  '| "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_")
+   :SpecialChar (lpegs '| " -!@#$%^&*()+=[]{}\\|/?.,;:'<>")
+   :Expression ['(| :Value :Symbol )]
+   :Value '(| :Keyword :Nummeric :String :Nil :Boolean :List :Map :Set)
+   :Nummeric '(| [\. (| [:Digit (* :Digit)]
+                        [\. :Digit (* :Digit)])]
+                 [:Digit (* :Digit) (| [\. (| [\. (* :Digit)]
+                                              (* :Digit))]
+                                        (* :Digit))])
+   :String [\" '(* (| :Char :SpecialChar)) \"]
    :Keyword [\# :Symbol]
-   :Float ['(* :Digit) \. :Digit '(* :Digit)]
-   :Integer [:Digit '(* :Digit)]
    :Digit (lpegs '| "0123456789")
    :Nil (pegs "nil")
    :Boolean '(| :True :False)
    :True (pegs "true")
-   :False (pegs "false")})
+   :False (pegs "false")
 
-(name :$)
+   :List [\[ '(* [:_* :Expression :_*]) \]]
+   :Map [\{ '(* [:_* :Keyword :_* \: :_* :Expression :_*]) \}]
+   :Set [\( '(* [:_* :Expression :_*]) \)]})
+
 
 (defn parse
   "Input string s."
@@ -35,12 +39,29 @@
 
 (comment
   (parse "x = y")
-  (parse "a = 42")
   (parse "s = \"Hello world!\"")
+  (parse "k = #keyword")
+
+  (parse "a = 42")
   (parse "pi = 3.141")
   (parse "b = .12345")
-  (parse "k = #keyword")
+  (parse "UglyLongCaseName = 1.")
+
   (parse "t = true")
   (parse "f = false")
   (parse "n = nil")
-  (parse "r1 = 1..99"))
+
+  (parse "r1 = 10..99")
+  (parse "r2 = ..512")
+  (parse "r3 = 10..")
+
+  (parse "s1 = (1 2)")
+  (parse "s2 = ( #k )")
+
+  (parse "m1 = {#k1:v1}")
+  (parse "m2 = {}")
+  (parse "m3 = { #key: \"Value\" #key2 :3}")
+
+  (parse "l1 = [1..]")
+  (parse "l2 = [1 3 \"test\" #huhu 3.141]")
+  (parse "l3 = []"))
