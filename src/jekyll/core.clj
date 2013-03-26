@@ -4,7 +4,7 @@
 
 (def stages
   "Stages of compilation."
-  [slurp parse])
+  [slurp parse cleanup])
 
 
 (defn- index-of [item coll]
@@ -36,3 +36,5 @@
   "Run all stages and spit out bytecode."
   [input]
   (reduce call-stage input stages))
+
+(all-stages "doc/value_sample")
