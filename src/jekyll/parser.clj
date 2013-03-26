@@ -1,25 +1,26 @@
 (ns jekyll.parser
-  (:use [jekyll.pegasus :only [pegs lpegs pegasus wrap-string]] ))
+  (:use [jekyll.pegasus :only [pegs lpegs pegasus wrap-string]] )
+  (:require [clojure.zip :as zip]))
 
 
 (def grammar
-  {:_* '(* :Whitespace)
-   :Whitespace '(| \newline \return \tab \space)
-   :Namespace [ :_* '(* :Definition '(| :Whitespace :$) :_*) :$]
+  {:Whitespace '(| \newline \return \tab \space)
+   :_* '(* :Whitespace)
+   :_+ [:Whitespace :_*]
+   :Namespace [:_* '(* [:Definition (| :_+ :$)]) :$]
    :Definition [ :Identity :_* \= :_* :Expression ]
    :Identity [ :Symbol ]
    :Symbol [:Char '(* (| :Char :Digit))]
    :Char (lpegs  '| "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_")
    :SpecialChar (lpegs '| " -!@#$%^&*()+=[]{}\\|/?.,;:'<>")
-   :Expression ['(| :Value :Symbol )]
-   :Value '(| :Keyword :Nummeric :String :Nil :Boolean :List :Map :Set)
-   :Nummeric '(| [\. (| [:Digit (* :Digit)]
-                        [\. :Digit (* :Digit)])]
+   :Expression ['(| :Value :Identity )]
+   :Value '(| :Identifier :Nummeric :String :Nil :Boolean :List :Map :Set)
+   :Nummeric '(| [\. [\. :Digit (* :Digit)]]
                  [:Digit (* :Digit) (| [\. (| [\. (* :Digit)]
-                                              (* :Digit))]
-                                        (* :Digit))])
+                                              [:Digit (* :Digit)])]
+                                       (* :Digit))])
    :String [\" '(* (| :Char :SpecialChar)) \"]
-   :Keyword [\# :Symbol]
+   :Identifier [\# :Symbol]
    :Digit (lpegs '| "0123456789")
    :Nil (pegs "nil")
    :Boolean '(| :True :False)
@@ -27,7 +28,7 @@
    :False (pegs "false")
 
    :List [\[ '(* [:_* :Expression :_*]) \]]
-   :Map [\{ '(* [:_* :Keyword :_* \: :_* :Expression :_*]) \}]
+   :Map [\{ '(* [:_* :Expression :_* \: :_* :Expression :_*]) \}]
    :Set [\( '(* [:_* :Expression :_*]) \)]})
 
 
@@ -37,31 +38,36 @@
   (pegasus :Namespace grammar (wrap-string s)))
 
 
+(defn grammar-zip [root]
+  "Zipper for parse trees."
+  (let [branch? (fn [node]
+                  (when node
+                    (or (map? node)
+                        (vector? node))))
+        children (fn [node]
+                   (cond
+                     (nil? node) nil
+                     (map? node) (seq node)
+                     :else node))
+        make-node (fn [node children]
+                    (cond
+                      (nil? node) nil
+                      (vector? node) (into [] children)
+                      (map? node) (let [[[k v]] children] (assoc node k v))
+                      :else node))]
+    (zip/zipper branch? children make-node root)))
+
+
+(defn tree-remove [zipper matcher]
+  (loop [loc zipper]
+    (if (zip/end? loc)
+      (zip/root loc)
+      (if-let [matcher-result (matcher (zip/node loc))]
+        (recur (zip/next (zip/remove loc)))
+        (recur (zip/next loc))))))
+
+
 (comment
-  (parse "x = y")
-  (parse "s = \"Hello world!\"")
-  (parse "k = #keyword")
-
-  (parse "a = 42")
-  (parse "pi = 3.141")
-  (parse "b = .12345")
-  (parse "UglyLongCaseName = 1.")
-
-  (parse "t = true")
-  (parse "f = false")
-  (parse "n = nil")
-
-  (parse "r1 = 10..99")
-  (parse "r2 = ..512")
-  (parse "r3 = 10..")
-
-  (parse "s1 = (1 2)")
-  (parse "s2 = ( #k )")
-
-  (parse "m1 = {#k1:v1}")
-  (parse "m2 = {}")
-  (parse "m3 = { #key: \"Value\" #key2 :3}")
-
-  (parse "l1 = [1..]")
-  (parse "l2 = [1 3 \"test\" #huhu 3.141]")
-  (parse "l3 = []"))
+  (tree-remove (grammar-zip (parse "x=1"))
+               #(or (and (map? %) (contains? % :_*))
+                    (= % '()))))

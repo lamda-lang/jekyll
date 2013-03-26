@@ -193,7 +193,7 @@
     "Returns the AST resulting from parsing the wrapped input 'w'
      given a grammar definition 'g' and starting at rule 'n' in 'g'."
     [n g w]
-    (when (keyword? n) (debug n w 25))
+;    (when (keyword? n) (debug n w 25))
     (cond
         (keyword? n)(peg-keyword n g w)
         (vector? n) (peg-vec n g w)
