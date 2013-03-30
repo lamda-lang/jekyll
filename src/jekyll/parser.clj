@@ -1,6 +1,7 @@
 (ns jekyll.parser
-  (:use [jekyll.pegasus :only [pegs lpegs pegasus wrap-string]] )
-  (:require [clojure.zip :as zip]))
+  (:use [jekyll.pegasus :only [pegs lpegs pegasus wrap-string]]
+        [jekyll.semantic :only [typify]]
+        [jekyll.zip]))
 
 
 (def grammar
@@ -38,39 +39,15 @@
   (pegasus :Namespace grammar (wrap-string s)))
 
 
-(defn grammar-zip [root]
-  "Zipper for parse trees."
-  (let [branch? (fn [node]
-                  (when node
-                    (or (map? node)
-                        (vector? node)
-                        (seq? node))))
-        children (fn [node]
-                   (cond
-                    (nil? node) nil
-                    (map? node) (seq node)
-                    :else node))
-        make-node (fn [node children]
-                    (cond
-                     (nil? node) nil
-                     (vector? node) (into [] children)
-                     (map? node) (reduce #(let [[k v] %2] (assoc %1 k v)) {} children)
-                     (seq? node) (apply list children) ; HACK fixes order -> into '()
-                     :else node))]
-  (zip/zipper branch? children make-node root)))
+(defn clean-parse-tree [parse-tree]
+  (tree-remove (universal-zip parse-tree) parsing-artifact?))
 
 
-(defn tree-remove [zipper matcher]
-  (loop [loc zipper]
-    (if (zip/end? loc)
-      (zip/root loc)
-      (if-let [matcher-result (matcher (zip/node loc))]
-        (recur (zip/next (zip/remove loc)))
-        (recur (zip/next loc))))))
+(defn parsing-artefact? [x]
+  (or (and (map? x) (or (contains? x :_*)
+                        (contains? x :_+)))
+      (= x '())))
 
 
 (comment
-  (tree-remove (grammar-zip (parse " x = 1 \n y = \"Hello World!\" \n"))
-               #(or (and (map? %) (or (contains? % :_*)
-                                      (contains? % :_+)))
-                    (= % '()))))
+  (-> (clean-parse-tree (parse " x = 1 \n y = \"Hello World!\" \n"))))
