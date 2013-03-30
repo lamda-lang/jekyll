@@ -56,8 +56,8 @@
                      (vector? node) (into [] children)
                      (map? node) (reduce #(let [[k v] %2] (assoc %1 k v)) {} children)
                      (seq? node) (apply list children) ; HACK fixes order -> into '()
-                     :else node)))]
-  (zip/zipper branch? children make-node root))
+                     :else node))]
+  (zip/zipper branch? children make-node root)))
 
 
 (defn tree-remove [zipper matcher]
