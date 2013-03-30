@@ -39,14 +39,14 @@
   (pegasus :Namespace grammar (wrap-string s)))
 
 
-(defn clean-parse-tree [parse-tree]
-  (tree-remove (universal-zip parse-tree) parsing-artifact?))
-
-
-(defn parsing-artefact? [x]
+(defn parsing-artifact? [x]
   (or (and (map? x) (or (contains? x :_*)
                         (contains? x :_+)))
       (= x '())))
+
+(defn clean-parse-tree [parse-tree]
+  (tree-remove (universal-zip parse-tree) parsing-artifact?))
+
 
 
 (comment

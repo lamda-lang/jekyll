@@ -1,10 +1,10 @@
 (ns jekyll.core
-  (:use [jekyll.parser :only [parse]]))
+  (:use [jekyll.parser :only [parse clean-parse-tree]]))
 
 
 (def stages
   "Stages of compilation."
-  [slurp parse cleanup])
+  [slurp parse clean-parse-tree])
 
 
 (defn- index-of [item coll]
@@ -37,4 +37,4 @@
   [input]
   (reduce call-stage input stages))
 
-(all-stages "doc/value_sample")
+;(all-stages "doc/value_sample")

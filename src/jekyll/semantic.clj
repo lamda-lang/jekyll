@@ -3,10 +3,6 @@
   (:require [clojure.zip :as zip]))
 
 
-(defn typify [clean-parse-tree]
-  (tree-edit clean-parse-tree type add-meta))
-
-
 (defn type [x]
   "Check parsed value if proper for type and return type."
   (if-not (map? x)
@@ -22,6 +18,9 @@
     (println "adding meta " meta " for "x)
     (with-meta x
       (merge-with assoc (or (meta x) {}) meta))))
+
+(defn typify [clean-parse-tree]
+  (tree-edit clean-parse-tree type add-meta))
 
 
 (comment
