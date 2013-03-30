@@ -43,19 +43,21 @@
   (let [branch? (fn [node]
                   (when node
                     (or (map? node)
-                        (vector? node))))
+                        (vector? node)
+                        (seq? node))))
         children (fn [node]
                    (cond
-                     (nil? node) nil
-                     (map? node) (seq node)
-                     :else node))
+                    (nil? node) nil
+                    (map? node) (seq node)
+                    :else node))
         make-node (fn [node children]
                     (cond
-                      (nil? node) nil
-                      (vector? node) (into [] children)
-                      (map? node) (let [[[k v]] children] (assoc node k v))
-                      :else node))]
-    (zip/zipper branch? children make-node root)))
+                     (nil? node) nil
+                     (vector? node) (into [] children)
+                     (map? node) (reduce #(let [[k v] %2] (assoc %1 k v)) {} children)
+                     (seq? node) (apply list children) ; HACK fixes order -> into '()
+                     :else node))]
+  (zip/zipper branch? children make-node root)))
 
 
 (defn tree-remove [zipper matcher]
@@ -68,6 +70,7 @@
 
 
 (comment
-  (tree-remove (grammar-zip (parse "x=1"))
-               #(or (and (map? %) (contains? % :_*))
+  (tree-remove (grammar-zip (parse " x = 1 \n y = \"Hello World!\" \n"))
+               #(or (and (map? %) (or (contains? % :_*)
+                                      (contains? % :_+)))
                     (= % '()))))
