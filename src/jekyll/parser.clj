@@ -62,7 +62,6 @@
 
 (defn tree-remove [zipper matcher]
   (loop [loc zipper]
-    (println "at pos: " (zip/node loc))
     (if (zip/end? loc)
       (zip/root loc)
       (if-let [matcher-result (matcher (zip/node loc))]
