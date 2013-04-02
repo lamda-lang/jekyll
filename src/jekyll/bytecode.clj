@@ -6,7 +6,7 @@
     (.write out (byte-array byte-seq))))
 
 (defn vbri [i] ; works only for < 128 now
-  (+ i 1))
+  i)
 
 (defn create-string [s]
    (concat [3 (.length s)] (.toCharArray s)))

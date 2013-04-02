@@ -9,12 +9,12 @@
    :_* '(* :Whitespace)
    :_+ [:Whitespace :_*]
    :Namespace [:_* '(* [:Definition (| :_+ :$)]) :$]
-   :Definition [ :Identity :_* \= :_* :Expression ]
-   :Identity [ :Symbol ]
+   :Definition [:Identity :_* \= :_* :Expression]
+   :Identity :Symbol
    :Symbol [:Char '(* (| :Char :Digit))]
    :Char (lpegs  '| "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_")
    :SpecialChar (lpegs '| " -!@#$%^&*()+=[]{}\\|/?.,;:'<>")
-   :Expression ['(| :Value :Identity )]
+   :Expression '(| :Value :Identity )
    :Value '(| :Identifier :Nummeric :String :Nil :Boolean :List :Map :Set)
    :Nummeric '(| [\. [\. :Digit (* :Digit)]]
                  [:Digit (* :Digit) (| [\. (| [\. (* :Digit)]
@@ -42,7 +42,8 @@
 (defn parsing-artifact? [x]
   (or (and (map? x) (or (contains? x :_*)
                         (contains? x :_+)))
-      (= x '())))
+      (= x '())
+      (= x :$)))
 
 (defn clean-parse-tree [parse-tree]
   (tree-remove (universal-zip parse-tree) parsing-artifact?))
@@ -50,4 +51,6 @@
 
 
 (comment
-  (-> (clean-parse-tree (parse " x = 1 \n y = \"Hello World!\" \n"))))
+  (-> " x = false \n y = \"Hello World!\" \n"
+      parse
+      clean-parse-tree))
