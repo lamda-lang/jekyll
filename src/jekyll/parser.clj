@@ -46,7 +46,8 @@
       (= x :$)))
 
 (defn clean-parse-tree [parse-tree]
-  (tree-remove (universal-zip parse-tree) parsing-artifact?))
+  (tree-remove (universal-zip parse-tree)
+               parsing-artifact?))
 
 
 
