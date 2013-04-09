@@ -15,6 +15,7 @@
       (case k
         :String (stringify-token (map vals (second v)))
 ;        :Nummeric (. Integer parseInt (stringify-token (map vals v))) ; only works for single digit atm.
+        :Numeric (. Integer parseInt (reduce str (map #(val (first %)) (flatten v))))
         :Boolean (let [[bk bv] (first v)] (= :True bk))
         :Nil nil
         n))
@@ -27,8 +28,8 @@
              java-value))
 
 
-(comment
-  (-> "s = true \n h = \"Hello sailor!\" \n numBer=333"
+  (-> "s = true \n h = \"Hello sailor!\" \n numBer=333 \n float = 234"
       parse
       clean-parse-tree
-      typify))
+      typify
+      )
