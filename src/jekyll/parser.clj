@@ -5,19 +5,18 @@
 (def grammar
   {:_* '(* :Whitespace)
    :Whitespace '(| \newline \return \tab \space)
-   :Namespace [ :_* '(* :Definition '(| :Whitespace :$) :_*) :$]
+   :Module [ :_* '(* [:Definition :_* ])]
    :Definition [ :Identity :_* \= :_* :Expression ]
    :Identity [ :Symbol ]
    :Symbol [:Char '(* (| :Char :Digit))]
    :Char (lpegs  '| "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_")
    :SpecialChar (lpegs '| " -!@#$%^&*()+=[]{}\\|/?.,;:'<>")
    :Expression ['(| :Value :Symbol )]
-   :Value '(| :Keyword :Nummeric :String :Nil :Boolean :List :Map :Set)
-   :Nummeric '(| [\. (| [:Digit (* :Digit)]
-                        [\. :Digit (* :Digit)])]
-                 [:Digit (* :Digit) (| [\. (| [\. (* :Digit)]
-                                              (* :Digit))]
-                                        (* :Digit))])
+   :Value '(| :Keyword :Numeric :String :Nil :Boolean :List :Map :Set)
+   :Integer [ :Digit '(* :Digit)]
+   :Float [ :Integer \. :Integer]
+   :Range ['(| :Float :Integer (* :Digit)) \. \. '(| :Float :Integer (* :Digit))] 
+   :Numeric '(| :Range :Float :Integer )
    :String [\" '(* (| :Char :SpecialChar)) \"]
    :Keyword [\# :Symbol]
    :Digit (lpegs '| "0123456789")
@@ -26,15 +25,15 @@
    :True (pegs "true")
    :False (pegs "false")
 
-   :List [\[ '(* [:_* :Expression :_*]) \]]
-   :Map [\{ '(* [:_* :Keyword :_* \: :_* :Expression :_*]) \}]
-   :Set [\( '(* [:_* :Expression :_*]) \)]})
+   :List [\[ :_* '(* [:Expression :_*]) \]]
+   :Map [\{ :_* '(* [:Keyword :_* \: :_* :Expression :_*]) \}]
+   :Set [\( :_* '(* [:Expression :_*]) \)]})
 
 
 (defn parse
   "Input string s."
   [s]
-  (pegasus :Namespace grammar (wrap-string s)))
+  (pegasus :Module grammar (wrap-string s)))
 
 
 (comment
@@ -44,7 +43,7 @@
 
   (parse "a = 42")
   (parse "pi = 3.141")
-  (parse "b = .12345")
+  (parse "b = 0.12345")
   (parse "UglyLongCaseName = 1.")
 
   (parse "t = true")
