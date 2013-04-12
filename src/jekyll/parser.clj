@@ -1,25 +1,23 @@
 (ns jekyll.parser
   (:use [jekyll.pegasus :only [pegs lpegs pegasus wrap-string]]
-        [jekyll.semantic :only [typify]]
         [jekyll.zip]))
 
 
 (def grammar
-  {:Whitespace '(| \newline \return \tab \space)
-   :_* '(* :Whitespace)
-   :_+ [:Whitespace :_*]
-   :Namespace [:_* '(* [:Definition (| :_+ :$)]) :$]
-   :Definition [:Identity :_* \= :_* :Expression]
-   :Identity :Symbol
+  {:_* '(* :Whitespace)
+   :Whitespace '(| \newline \return \tab \space)
+   :Module [ :_* '(* [:Definition :_* ])]
+   :Definition [ :Identity :_* \= :_* :Expression ]
+   :Identity [ :Symbol ]
    :Symbol [:Char '(* (| :Char :Digit))]
    :Char (lpegs  '| "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_")
    :SpecialChar (lpegs '| " -!@#$%^&*()+=[]{}\\|/?.,;:'<>")
-   :Expression '(| :Value :Identity )
-   :Value '(| :Identifier :Nummeric :String :Nil :Boolean :List :Map :Set)
-   :Nummeric '(| [\. [\. :Digit (* :Digit)]]
-                 [:Digit (* :Digit) (| [\. (| [\. (* :Digit)]
-                                              [:Digit (* :Digit)])]
-                                       (* :Digit))])
+   :Expression ['(| :Value :Symbol )]
+   :Value '(| :Identifier :Numeric :String :Nil :Boolean :List :Map :Set)
+   :Integer [ :Digit '(* :Digit)]
+   :Float [ :Integer \. :Integer]
+   :Range ['(| :Float :Integer (* :Digit)) \. \. '(| :Float :Integer (* :Digit))]
+   :Numeric '(| :Range :Float :Integer )
    :String [\" '(* (| :Char :SpecialChar)) \"]
    :Identifier [\# :Symbol]
    :Digit (lpegs '| "0123456789")
@@ -28,15 +26,15 @@
    :True (pegs "true")
    :False (pegs "false")
 
-   :List [\[ '(* [:_* :Expression :_*]) \]]
-   :Map [\{ '(* [:_* :Expression :_* \: :_* :Expression :_*]) \}]
-   :Set [\( '(* [:_* :Expression :_*]) \)]})
+   :List [\[ :_* '(* [:Expression :_*]) \]]
+   :Map [\{ :_* '(* [:Keyword :_* \: :_* :Expression :_*]) \}]
+   :Set [\( :_* '(* [:Expression :_*]) \)]})
 
 
 (defn parse
   "Input string s."
   [s]
-  (pegasus :Namespace grammar (wrap-string s)))
+  (pegasus :Module grammar (wrap-string s)))
 
 
 (defn parsing-artifact? [x]
@@ -45,10 +43,10 @@
       (= x '())
       (= x :$)))
 
+
 (defn clean-parse-tree [parse-tree]
   (tree-remove (universal-zip parse-tree)
                parsing-artifact?))
-
 
 
 (comment
