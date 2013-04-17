@@ -7,10 +7,14 @@
 (defn stringify [t]
   (apply str (flatten (map vals (flatten t)))))
 
+(defn correct-bound [b]
+  (if (= b \.)
+    nil
+    (let [[k v] (first b)] {k (stringify v)})))
 
-;(defn stringify-nums []
 
-  (defn reduce-tree [matched n]
+
+(defn reduce-tree [matched n]
     (if matched
       (let [mv (first (val (first n)))
             [k v] mv]
@@ -19,9 +23,9 @@
           :Symbol (stringify v)
           :Integer {:Integer (stringify v)}
           :Float {:Float (stringify v)}
-          :Range {:Range [(stringify (val (first (first v)))) (stringify (val (first (last v))))]}
+          :Range {:Range [(correct-bound (first v)) (correct-bound (last v))]}
           :Boolean {:Boolean (let [[bk bv] (first v)] (= :True bk))}
-          :Nil nil
+          ;:Nil nil
           n))
       n))
 
@@ -34,7 +38,7 @@
                reduce-tree))
 
 
-  (-> "s = true \n h = \"Hello sailor!\" \n numBer=333 \n float = 2.34 \n range = 1..8 "
+  (-> "s = true \n h = \"Hello sailor!\" \n numBer=333 \n float = 2.34 \n range = ..89090 "
       parse
       clean-parse-tree
       typify
