@@ -15,7 +15,8 @@
    :SpecialChar (lpegs '| " -!@#$%^&*()+=[]{}\\|/?.,;:'<>")
    :Expression '(| :Identifier :Range :Float :Integer :String :Nil :Boolean :List :Map :Set :Symbol) ; order is relevant
    :Integer [ :Digit '(* :Digit)]
-   :Float [ :Integer \. :Integer]
+   :Float [ :Digit '(* :Digit) :Dot :Digit '(* :Digit)]
+   :Dot \.
    :Range ['(| :Float :Integer (* :Digit)) \. \. '(| :Float :Integer (* :Digit))]
    :String [\" '(* (| :Char :SpecialChar :Digit)) \"]
    :Identifier [\# :Symbol]
@@ -40,11 +41,14 @@
 
 (defn parsing-artifact? [x]
   (or (and (map? x) (or (contains? x :_*)
-                        (contains? x :_+)))
+                        (contains? x :_+)
+                        (contains? x :Where)
+                        (contains? x :End)))
       (= x '())
       (= x :$)
       (= x \=)
-      (and (map? x) (or (contains? x :Where) (contains? x :End)))))
+      (= x \")
+      ))
 
 
 (defn clean-parse-tree [parse-tree]
