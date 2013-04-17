@@ -37,7 +37,10 @@ end
 f(x)
   if true = 1
   if false = 2
-  
-x = 1 where
-  y = 2
+
+a = 1
+x = y where
+  y = z where
+    z = a
+  end
 end
