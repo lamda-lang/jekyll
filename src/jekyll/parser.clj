@@ -8,18 +8,17 @@
    :Whitespace '(| \newline \return \tab \space)
    :Module [ :_* '(* [:Definition :_* ] :$)]
    :Definition [ :Identity :_* \= :_* :Expression :_* '(* :Scope)]
-   :Scope [:Where :_* '(* :Definition) :_* :End :_*]
-   :Identity '(| :Symbol)
-   :Symbol [:Char '(* (| :Char :Digit))]
+   :Scope [:Where :_* '(* [:Definition]) :_* :End :_*]
+   :Identity [:Char '(* (| :Char :Digit))]
    :Char (lpegs  '| "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_")
    :SpecialChar (lpegs '| " -!@#$%^&*()+=[]{}\\|/?.,;:'<>")
-   :Expression '(| :Identifier :Range :Float :Integer :String :Nil :Boolean :List :Map :Set :Symbol) ; order is relevant
+   :Expression '(| :Identifier :Range :Float :Integer :String :Nil :Boolean :List :Map :Set :Identity) ; order is relevant
    :Integer [ :Digit '(* :Digit)]
    :Float [ :Digit '(* :Digit) :Dot :Digit '(* :Digit)]
    :Dot \.
    :Range ['(| :Float :Integer (* :Digit)) \. \. '(| :Float :Integer (* :Digit))]
    :String [\" '(* (| :Char :SpecialChar :Digit)) \"]
-   :Identifier [\# :Symbol]
+   :Identifier [\# :Identity]
    :Digit (lpegs '| "0123456789")
    :Nil (pegs "nil")
    :Boolean '(| :True :False)
@@ -52,8 +51,8 @@
 
 
 (defn clean-parse-tree [parse-tree]
-  (tree-remove (universal-zip parse-tree)
-               parsing-artifact?))
+  (first (get (tree-remove (universal-zip parse-tree)
+                           parsing-artifact?) :Module)))
 
 
 (comment
