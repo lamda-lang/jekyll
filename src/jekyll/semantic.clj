@@ -20,12 +20,12 @@
       (let [mv (first (val (first n)))
             [k v] mv]
         (case k
-          :String {:String (stringify v)}
-          :Identity {:Identity (stringify v)}
-          :Integer {:Integer (stringify v)}
-          :Float {:Float (stringify v)}
+          :String (stringify v)
+          :Identity (symbol (stringify v))
+          :Integer  (. Integer parseInt (stringify v))
+          :Float (. Float parseFloat (stringify v))
           :Range {:Range [(correct-bound (first v)) (correct-bound (last v))]}
-          :Boolean {:Boolean (let [[bk bv] (first v)] (= :True bk))}
+          :Boolean (let [[bk bv] (first v)] (= :True bk))
           :Nil nil
           mv))
       {:Identity (stringify (val (first n)))})
@@ -43,8 +43,7 @@
   [matched n]
   (if matched
     (let [definition (val (first (first n)))]
-      {:ID (first definition)
-       :VALUE (second definition)
+      {(first definition) (second definition)
        :DEF (if (= (count definition) 2) '() (first (get (last definition) :Scope)))})
     n))
 
