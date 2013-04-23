@@ -27,7 +27,7 @@
           :Range {:Range [(correct-bound (first v)) (correct-bound (last v))]}
           :Boolean {:Boolean (let [[bk bv] (first v)] (= :True bk))}
           :Nil nil
-          n))
+          mv))
       {:Identity (stringify (val (first n)))})
       n))
 
@@ -53,7 +53,7 @@
              #(and (vector? %) (map? (first %)) (contains? (first %) :Definition))
              reduce-definition))
 
-(-> "s = true \n h = \"Hello sailor!\" \n numBer=a where a = 333 b=c where c = 123 end end \n float = 2.34 \n range = ..89090 "
+(-> "l = [1 2 3] b = 5"
             parse
             clean-parse-tree
             typify
