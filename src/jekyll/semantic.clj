@@ -14,6 +14,18 @@
     (let [[k v] (first b)] {k (stringify v)})))
 
 
+(defrecord Range [start end])
+
+(defn rangify [start end]
+  (let [nstart (cond (:Integer start) (. Integer parseInt (:Integer start))
+                     (:Float start) (. Float parseFloat (:Float start))
+                     :else nil)
+        nend (cond (:Integer end) (. Integer parseInt (:Integer end))
+                   (:Float end) (. Float parseFloat (:Float end))
+                   :else nil)]
+    (Range. nstart nend)))
+
+
 (defn simplify-definitions [matched n]
   (if matched
     (if (contains? n :Expression)
@@ -24,11 +36,11 @@
           :Identity (symbol (stringify v))
           :Integer  (. Integer parseInt (stringify v))
           :Float (. Float parseFloat (stringify v))
-          :Range {:Range [(correct-bound (first v)) (correct-bound (last v))]}
+          :Range (rangify (correct-bound (first v)) (correct-bound (last v)))
           :Boolean (let [[bk bv] (first v)] (= :True bk))
           :Nil nil
           n))
-      (stringify (val (first n))))
+      (symbol (stringify (val (first n)))))
     n))
 
 
