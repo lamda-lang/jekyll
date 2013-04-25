@@ -39,9 +39,9 @@
           :Range (rangify (correct-bound (first v)) (correct-bound (last v)))
           :Boolean (let [[bk bv] (first v)] (= :True bk))
           :Nil nil
-          n))
-      (symbol (stringify (val (first n)))))
-    n))
+          mv))
+      {:Identity (stringify (val (first n)))})
+      n))
 
 
 (defn typify [clean-parse-tree]
@@ -64,8 +64,9 @@
              #(and (vector? %) (map? (first %)) (contains? (first %) :Definition))
              reduce-definition))
 
-(-> "s = true \n h = \"Hello sailor!\" \n numBer=a where a = 333 b=c where c = 123 end end \n float = 2.34 \n range = ..89090 "
+(-> "l = [1 2 3] b = 5 lambada = (a b  : plus(a b   c ) )"
             parse
             clean-parse-tree
             typify
+            reduce-tree
             )

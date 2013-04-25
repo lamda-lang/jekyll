@@ -30,8 +30,10 @@
    :End (pegs "end")
 
    :List [\[ :_* '(* [:Expression :_*]) \]]
-   :Map [\{ :_* '(* [:Keyword :_* \: :_* :Expression :_*]) \}]
-   :Set [\( :_* '(* [:Expression :_*]) \)]})
+   :Map [\{ :_* '(* [:Identifier :_* \: :_* :Expression :_*]) \}]
+   :Set [\( :_* '(* [:Expression :_*]) \)]}
+
+  )
 
 
 (defn parse
@@ -49,6 +51,14 @@
       (= x :$)
       (= x \=)
       (= x \")
+      (= x \#)
+      (= x \{)
+      (= x \})
+      (= x \()
+      (= x \))
+      (= x \[)
+      (= x \])
+      (= x \:)
       ))
 
 
