@@ -13,7 +13,7 @@
    :Char (lpegs  '| "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_")
    :SpecialChar (lpegs '| " -!@#$%^&*()+=[]{}\\|/?.,;:'<>")
    :Expression '(| :Identifier :Range :Float :Integer :String :Nil :Boolean :Application :Lambda :List :Map :Set :Identity) ; order is relevant
-   :Application ['(| :Identity :Lambda) \( :_* '(* [:Expression :_*])]
+   :Application ['(| :Identity :Lambda) '(* [\( :_* (* [:Expression :_*]) \)])]
    :Lambda [\( :_* '(* [:Identity :_*]) \: :_* '(* :Expression :_*) \)]
    :Integer [ :Digit '(* :Digit)]
    :Float [:Digit '(* :Digit) :Dot :Digit '(* :Digit)]
@@ -31,9 +31,7 @@
 
    :List [\[ :_* '(* [:Expression :_*]) \]]
    :Map [\{ :_* '(* [:Identifier :_* \: :_* :Expression :_*]) \}]
-   :Set [\( :_* '(* [:Expression :_*]) \)]}
-
-  )
+   :Set [\( :_* '(* [:Expression :_*]) \)]})
 
 
 (defn parse
@@ -68,6 +66,6 @@
 
 
 (comment
-  (-> " x = false \n y = \"Hello World!\" \n lambada = (a b: plus(a b))"
+  (-> "lambada = (a: id(a))(1)(2)"
       parse
       clean-parse-tree))
