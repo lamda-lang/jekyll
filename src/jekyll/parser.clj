@@ -6,7 +6,7 @@
 (def grammar
   {:_* '(* :Whitespace)
    :Whitespace '(| \newline \return \tab \space)
-   :Module [ :_* '(* [:Definition :_* ]) :$]
+   :Module [ :_* '(* [:Definition :_* ] ) :$]
    :Definition [ :Identity :_* \= :_* :Expression :_* '(* :Scope)]
    :Scope [:Where :_* '(* [:Definition]) :_* :End :_*]
    :Identity [:Char '(* (| :Char :Digit))]
@@ -28,6 +28,7 @@
    :False (pegs "false")
    :Where (pegs "where")
    :End (pegs "end")
+;   :Property [:Expression :Dot :Identity]
 
    :List [\[ :_* '(* [:Expression :_*]) \]]
    :Map [\{ :_* '(* [:Identifier :_* \: :_* :Expression :_*]) \}]
