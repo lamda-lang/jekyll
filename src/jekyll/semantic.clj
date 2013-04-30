@@ -42,7 +42,7 @@
           :Nil nil
           mv))
       (symbol (stringify (val (first n)))))
-      n))
+    n))
 
 
 (defn typify [clean-parse-tree]
@@ -89,10 +89,46 @@
              simplify-collection))
 
 
-(-> "xp = {#ag:2 #bs:3} vista = (1 2 1 a b 2 a) where a = 5 b = 10 end me = [1 2 3 4]"
-    parse
-    clean-parse-tree
-    typify
-    reduce-definitions
-    reduce-collections
-    )
+(defn reduce-lambda [clean-parse-tree]
+  (tree-edit (universal-zip clean-parse-tree)
+             #(and (vector? %)
+                   (or
+                    (= (first %) :Application)
+                    (= (first %) :Lambda)))
+             simplify-collection))
+
+
+(defn lisp-apply [reduced-parse-tree]
+  (tree-edit (universal-zip reduced-parse-tree)
+             #(and (vector? %)
+                   (= (first %) :Application))
+             (fn [matched n]
+               (let [[_ [sym args]] n]
+                 `(apply ~sym ~(into [] args))))))
+
+
+(defn lisp-eval [reduced-parse-tree]
+  (tree-edit (universal-zip reduced-parse-tree)
+             #(and (vector? %)
+                   (= (first %) :Lambda))
+             (fn [matched n]
+               (let [[_ def] n
+                     body (last def)
+                     args (if (= 1 (count def)) [] (first def))]
+                 `(fn ~(into [] args) ~body)))))
+
+
+(def plus +)
+
+
+((eval (get (-> "tfn = (a b: plus(a b))"
+                 parse
+                 clean-parse-tree
+                 typify
+                 reduce-definitions
+                 reduce-collections
+                 reduce-lambda
+                 lift-single-element-vectors
+                 lisp-apply
+                 lisp-eval
+                 ) (symbol "tfn"))) 1 2)

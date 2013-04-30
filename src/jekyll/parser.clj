@@ -13,7 +13,7 @@
    :Char (lpegs  '| "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_")
    :SpecialChar (lpegs '| " -!@#$%^&*()+=[]{}\\|/?.,;:'<>")
    :Expression '(| :Identifier :Range :Float :Integer :String :Nil :Boolean :Application :Lambda :List :Map :Set :Identity) ; order is relevant
-   :Application ['(| :Identity :Lambda) :Set '(* :Set)]
+   :Application ['(| :Identity :Lambda) \( :_* '(* [:Expression :_*]) \) '(* [\( :_* (* [:Expression :_*]) \)])]
    :Lambda [\( :_* '(* [:Identity :_*]) \: :_* '(* :Expression :_*) \)]
    :Integer [ :Digit '(* :Digit)]
    :Float [:Digit '(* :Digit) :Dot :Digit '(* :Digit)]
@@ -66,7 +66,15 @@
                            parsing-artifact?) :Module)))
 
 
+(defn lift-single-element-vectors [parse-tree]
+  (tree-edit (universal-zip parse-tree)
+             #(and (vector? %)
+                   (= 1 (count %)))
+             #(if %1 (first %2))))
+
+
 (comment
-  (-> "lambada = (a: id(a))(1)(2)"
+  (-> "lambada = (a b: id(a b))(1)(2)"
       parse
-      clean-parse-tree))
+      clean-parse-tree
+      lift-single-element-vectors))
