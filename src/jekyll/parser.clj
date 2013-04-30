@@ -13,7 +13,7 @@
    :Char (lpegs  '| "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_")
    :SpecialChar (lpegs '| " -!@#$%^&*()+=[]{}\\|/?.,;:'<>")
    :Expression '(| :Identifier :Range :Float :Integer :String :Nil :Boolean :Application :Lambda :List :Map :Set :Identity) ; order is relevant
-   :Application ['(| :Identity :Lambda) '(* [\( :_* (* [:Expression :_*]) \)])]
+   :Application ['(| :Identity :Lambda) :Set '(* :Set)]
    :Lambda [\( :_* '(* [:Identity :_*]) \: :_* '(* :Expression :_*) \)]
    :Integer [ :Digit '(* :Digit)]
    :Float [:Digit '(* :Digit) :Dot :Digit '(* :Digit)]
