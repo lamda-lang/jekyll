@@ -6,15 +6,17 @@
 (def grammar
   {:_* '(* :Whitespace)
    :Whitespace '(| \newline \return \tab \space)
-   :Module [ :_* '(* [:Definition :_* ] ):$]
+   :Module [ :_* '(* [:Definition :_* ] ) :$]
    :Definition [ :Identity :_* \= :_* :Expression :_* '(* :Scope)]
    :Scope [:Where :_* '(* [:Definition]) :_* :End :_*]
    :Identity [:Char '(* (| :Char :Digit))]
    :Char (lpegs  '| "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_")
    :SpecialChar (lpegs '| " -!@#$%^&*()+=[]{}\\|/?.,;:'<>")
-   :Expression '(| :Identifier :Range :Float :Integer :String :Nil :Boolean :List :Map :Set :Identity) ; order is relevant
+   :Expression '(| :Identifier :Range :Float :Integer :String :Nil :Boolean :Application :Lambda :List :Map :Set :Identity) ; order is relevant
+   :Application ['(| :Identity :Lambda) \( :_* '(* [:Expression :_*])]
+   :Lambda [\( :_* '(* [:Identity :_*]) \: :_* '(* :Expression :_*) \)]
    :Integer [ :Digit '(* :Digit)]
-   :Float [ :Digit '(* :Digit) :Dot :Digit '(* :Digit)]
+   :Float [:Digit '(* :Digit) :Dot :Digit '(* :Digit)]
    :Dot \.
    :Range ['(| :Float :Integer (* :Digit)) \. \. '(| :Float :Integer (* :Digit))]
    :String [\" '(* (| :Char :SpecialChar :Digit)) \"]
@@ -65,6 +67,6 @@
 
 
 (comment
-  (-> "a = b"
+  (-> " x = false \n y = \"Hello World!\" \n lambada = (a b: plus(a b))"
       parse
       clean-parse-tree))
