@@ -1,80 +1,35 @@
 (ns jekyll.parser
-  (:use [jekyll.pegasus :only [pegs lpegs pegasus wrap-string]]
-        [jekyll.zip]))
+  (:require [instaparse.core :as insta]))
+
+(def parser
+  (insta/parser
+   "Module = <_*> Definition* <_*>
+    Definition = Identity <_*> <'='> <_*> Expression <_*> Scope*
+    Scope = <'where'> <_*> (Definition <_*>)* <'end'> <_*>
+    Identity = !('nil' | 'true' | 'false') #'[A-Za-z_]\\w*'
+    Char = #'[A-Za-z_]'
+    Expression = Identifier | Range | Float | Integer | String | Nil | Boolean | Application | Lambda | List | Map | Set | Identity
+    Application = ( Identity | Application | Lambda ) <'('>  <_*> (Expression <_*>)* <')'>
+    Lambda = <'('> <_*> Args <':'> <_*> (Expression <_+>)* Expression <_*> <')'>
+    Args = (Identity <_*>)*
+    Float = #'-?\\d+' '.' #'\\d+'
+    Range = ( Float | Integer | Epsilon ) '..' ( Float | Integer | Epsilon )
+    Integer = #'-?\\d+'
+    String = <'\\\"'> #'[^\"]*' <'\\\"'>
+    Identifier = <'#'> #'\\w+'
+    Nil = <'nil'>
+    Boolean = 'true' | 'false'
+    List = <'['> <_*> (Expression <_*>)* <']'>
+    Map = <'{'> <_*> ( Expression <_*> <':'> <_*> Expression <_*> )* <'}'>
+    Set = <'('> <_*> (Expression <_*>)* <')'>
+    _ = #'\\s'"))
 
 
-(def grammar
-  {:_* '(* :Whitespace)
-   :Whitespace '(| \newline \return \tab \space)
-   :Module [ :_* '(* [:Definition :_* ] ) :$]
-   :Definition [ :Identity :_* \= :_* :Expression :_* '(* :Scope)]
-   :Scope [:Where :_* '(* [:Definition]) :_* :End :_*]
-   :Identity [:Char '(* (| :Char :Digit))]
-   :Char (lpegs  '| "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_")
-   :SpecialChar (lpegs '| " -!@#$%^&*()+=[]{}\\|/?.,;:'<>")
-   :Expression '(| :Identifier :Range :Float :Integer :String :Nil :Boolean :Application :Lambda :List :Map :Set :Identity) ; order is relevant
-   :Application ['(| :Identity :Lambda) \( :_* '(* [:Expression :_*]) \) '(* [\( :_* (* [:Expression :_*]) \)])]
-   :Lambda [\( :_* '(* [:Identity :_*]) \: :_* '(* :Expression :_*) \)]
-   :Integer [ :Digit '(* :Digit)]
-   :Float [:Digit '(* :Digit) :Dot :Digit '(* :Digit)]
-   :Dot \.
-   :Range ['(| :Float :Integer (* :Digit)) \. \. '(| :Float :Integer (* :Digit))]
-   :String [\" '(* (| :Char :SpecialChar :Digit)) \"]
-   :Identifier [\# :Identity]
-   :Digit (lpegs '| "0123456789")
-   :Nil (pegs "nil")
-   :Boolean '(| :True :False)
-   :True (pegs "true")
-   :False (pegs "false")
-   :Where (pegs "where")
-   :End (pegs "end")
-;   :Property [:Expression :Dot :Identity]
-
-   :List [\[ :_* '(* [:Expression :_*]) \]]
-   :Map [\{ :_* '(* [:Identifier :_* \: :_* :Expression :_*]) \}]
-   :Set [\( :_* '(* [:Expression :_*]) \)]})
-
-
-(defn parse
-  "Input string s."
-  [s]
-  (pegasus :Module grammar (wrap-string s)))
-
-
-(defn parsing-artifact? [x]
-  (or (and (map? x) (or (contains? x :_*)
-                        (contains? x :_+)
-                        (contains? x :Where)
-                        (contains? x :End)))
-      (= x '())
-      (= x :$)
-      (= x \=)
-      (= x \")
-      (= x \#)
-      (= x \{)
-      (= x \})
-      (= x \()
-      (= x \))
-      (= x \[)
-      (= x \])
-      (= x \:)
-      ))
-
-
-(defn clean-parse-tree [parse-tree]
-  (first (get (tree-remove (universal-zip parse-tree)
-                           parsing-artifact?) :Module)))
-
-
-(defn lift-single-element-vectors [parse-tree]
-  (tree-edit (universal-zip parse-tree)
-             #(and (vector? %)
-                   (= 1 (count %)))
-             #(if %1 (first %2))))
+(defn parse [s]
+  "Parse with our shiny new grammar."
+  (insta/parse parser s))
 
 
 (comment
   (-> "lambada = (a b: id(a b))(1)(2)"
-      parse
-      clean-parse-tree
-      lift-single-element-vectors))
+      parse))

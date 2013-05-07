@@ -4,17 +4,15 @@
   (:require [clojure.zip :as zip]))
 
 
-(defn stringify [t]
-  (apply str (flatten (map vals (flatten t)))))
-
 
 (defn correct-bound [b]
-  (if (= b \.)
+  (if (= b "..")
     nil
-    (let [[k v] (first b)] {k (stringify v)})))
+    (let [[k v] b] {k v})))
 
 
 (defrecord Range [start end])
+
 
 (defn rangify [start end]
   (let [nstart (cond (:Integer start) (. Integer parseInt (:Integer start))
@@ -28,54 +26,39 @@
 
 (defn typify-definition [matched n]
   (if matched
-    (if (contains? n :Expression)
-      (let [mv (first (val (first n)))
-            [k v] mv]
+    (if (= :Expression (first n))
+      (let [[k & vs] (second n)
+            [v] vs]
         (case k
-          :String (stringify v)
-          :Identity (symbol (stringify v))
-          :Identifier (keyword (stringify (val (first (first v)))))
-          :Integer  (. Integer parseInt (stringify v))
-          :Float (. Float parseFloat (stringify v))
-          :Range (rangify (correct-bound (first v)) (correct-bound (last v)))
-          :Boolean (let [[bk bv] (first v)] (= :True bk))
+          :String v
+          :Identity (symbol v)
+          :Identifier (keyword v)
+          :Integer  (. Integer parseInt v)
+          :Float (. Float parseFloat v)
+          :Range (rangify (correct-bound (first vs)) (correct-bound (last vs)))
+          :Boolean (= v "true")
           :Nil nil
-          mv))
-      (symbol (stringify (val (first n)))))
+          (second n)))
+      (symbol (second n)))
     n))
 
 
 (defn typify [clean-parse-tree]
-  (tree-edit (universal-zip clean-parse-tree)
-             #(and (map? %) (or
-                             (contains? % :Identity)
-                             (contains? % :Expression)))
+  (tree-edit (zip/vector-zip clean-parse-tree)
+             #(and (vector? %) (or
+                                (= (first %) :Identity)
+                                (= (first %) :Expression)))
              typify-definition))
-
-
-(defn simplify-definition [matched n]
-  (if matched
-    (let [definition (val (first (first n)))]
-      {(first definition) (second definition)
-       :DEF (if (= (count definition) 2) '() (first (get (last definition) :Scope)))})
-    n))
-
-
-(defn reduce-definitions [clean-parse-tree]
-  (tree-edit (universal-zip clean-parse-tree)
-             #(and (vector? %) (map? (first %)) (contains? (first %) :Definition))
-             simplify-definition))
 
 
 (defn simplify-collection [matched n]
   (if matched
-    (case (first n)
-      :Set (set (map first (first (second n))))
-      :Map (apply array-map (flatten (map
-                                      #(vec [(keyword (first (val (first (first %))))) (second %)])
-                                      (first (second n)))))
-      :List (map first (first (second n)))
-      n)
+    (let [[k & elems] n]
+      (case k
+        :Set (into #{} elems)
+        :Map (apply array-map elems)
+        :List elems
+        n))
     n))
 
 
@@ -89,46 +72,34 @@
              simplify-collection))
 
 
-(defn reduce-lambda [clean-parse-tree]
-  (tree-edit (universal-zip clean-parse-tree)
-             #(and (vector? %)
-                   (or
-                    (= (first %) :Application)
-                    (= (first %) :Lambda)))
-             simplify-collection))
-
-
 (defn lisp-apply [reduced-parse-tree]
-  (tree-edit (universal-zip reduced-parse-tree)
+  (tree-edit (zip/vector-zip reduced-parse-tree)
              #(and (vector? %)
                    (= (first %) :Application))
              (fn [matched n]
-               (let [[_ [sym args]] n]
+               (let [[_ sym & args] n]
                  `(apply ~sym ~(into [] args))))))
 
 
 (defn lisp-eval [reduced-parse-tree]
-  (tree-edit (universal-zip reduced-parse-tree)
+  (tree-edit (zip/vector-zip reduced-parse-tree)
              #(and (vector? %)
                    (= (first %) :Lambda))
              (fn [matched n]
-               (let [[_ def] n
-                     body (last def)
-                     args (if (= 1 (count def)) [] (first def))]
+               (let [[_ [_ & args] [& body]] n]
                  `(fn ~(into [] args) ~body)))))
 
 
 (def plus +)
 
+(defn third [col] (get col 2))
 
-((eval (get (-> "tfn = (a b: plus(a b))"
-                 parse
-                 clean-parse-tree
-                 typify
-                 reduce-definitions
-                 reduce-collections
-                 reduce-lambda
-                 lift-single-element-vectors
-                 lisp-apply
-                 lisp-eval
-                 ) (symbol "tfn"))) 1 2)
+((-> "tfn = (a b: plus(a b) )"
+      parse
+      typify
+      lisp-apply
+      lisp-eval
+      second
+      third
+      eval
+      ) 1 2)
