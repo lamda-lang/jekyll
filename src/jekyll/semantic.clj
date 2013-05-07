@@ -63,7 +63,7 @@
 
 
 (defn reduce-collections [clean-parse-tree]
-  (tree-edit (universal-zip clean-parse-tree)
+  (tree-edit (zip/vector-zip clean-parse-tree)
              #(and (vector? %)
                    (or
                     (= (first %) :Set)
@@ -94,7 +94,7 @@
 
 (defn third [col] (get col 2))
 
-((-> "tfn = (a b: plus(a b) )"
+((-> "tfn = (a b: map(identity [1 2 a]))"
       parse
       typify
       lisp-apply

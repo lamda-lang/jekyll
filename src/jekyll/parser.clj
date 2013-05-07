@@ -7,7 +7,6 @@
     Definition = Identity <_*> <'='> <_*> Expression <_*> Scope*
     Scope = <'where'> <_*> (Definition <_*>)* <'end'> <_*>
     Identity = !('nil' | 'true' | 'false') #'[A-Za-z_]\\w*'
-    Char = #'[A-Za-z_]'
     Expression = Identifier | Range | Float | Integer | String | Nil | Boolean | Application | Lambda | List | Map | Set | Identity
     Application = ( Identity | Application | Lambda ) <'('>  <_*> (Expression <_*>)* <')'>
     Lambda = <'('> <_*> Args <':'> <_*> (Expression <_+>)* Expression <_*> <')'>
