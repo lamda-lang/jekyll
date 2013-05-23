@@ -6,22 +6,33 @@
    "Module = <_*> Definition* <_*>
     Definition = Identity <_*> <'='> <_*> Expression <_*> Scope*
     Scope = <'where'> <_*> (Definition <_*>)* <'end'> <_*>
-    Identity = !('nil' | 'true' | 'false') #'[A-Za-z_]\\w*'
-    Expression = Identifier | Range | Float | Integer | String | Nil | Boolean | Application | Lambda | List | Map | Set | Identity
-    Application = ( Identity | Application | Lambda ) <'('>  <_*> (Expression <_*>)* <')'>
-    Lambda = <'('> <_*> Args <':'> <_*> (Expression <_+>)* Expression <_*> <')'>
+    Identity = !('nil' | 'true' | 'false' | 'when' | 'case') #'[A-Za-z_]\\w*'
+    Expression = Identifier | Range | Integer | String | Nil | Boolean | Application | Lambda | List | Map | Set | Identity | Condition | Case | Property | Subscript | Float
+    Expressions = (Expression <_+>)* Expression
+    KeyValue = Expression <_*> <':'> <_*> Expression
+    KeyValues = (KeyValue <_+>)* KeyValue
+    Application = ( Identity | Application | Lambda ) <'('>  <_*> [Expressions <_*>] <')'>
+    Lambda = <'('> <_*> Args <':'> <_*> Expressions <_*> <')'>
+    Condition = <'when'> <_*> (KeyValue <_*>)* <'end'>
+    Case = <'case'> <_*> Identity <_+> (Expression <_*> [Guard <_*>] <':'> <_*> Expression <_*>)* <'end'>
+    Property = Expression <'.'> Expression
+    Guard = <'if'> <_*> Expressions
+    Subscript = Expression <'['> <_*> Expression <_*> <']'>
+    ListComprehension = Expression <_*> <'for'> <_*> KeyValue <_*> [Guard]
+    MapComprehension = KeyValue <_*> <'for'> <_*> KeyValue <_*> [Guard]
     Args = (Identity <_*>)*
-    Float = #'-?\\d+' '.' #'\\d+'
-    Range = ( Float | Integer | Epsilon ) '..' ( Float | Integer | Epsilon )
+    Float = #'-?\\d+.\\d+'
+    Range = ( Expression | Epsilon ) '..' ( Expression | Epsilon )
     Integer = #'-?\\d+'
     String = <'\\\"'> #'[^\"]*' <'\\\"'>
     Identifier = <'#'> #'\\w+'
     Nil = <'nil'>
     Boolean = 'true' | 'false'
-    List = <'['> <_*> (Expression <_*>)* <']'>
-    Map = <'{'> <_*> ( Expression <_*> <':'> <_*> Expression <_*> )* <'}'>
-    Set = <'('> <_*> (Expression <_*>)* <')'>
+    List = <'['> <_*> ( Expressions | ListComprehension )? <_*> <']'>
+    Map =  <'{'> <_*> ( KeyValues   | MapComprehension  )? <_*> <'}'>
+    Set =  <'('> <_*> ( Expressions | ListComprehension )? <_*> <')'>
     _ = #'\\s'"))
+
 
 
 (defn parse [s]
@@ -32,3 +43,15 @@
 (comment
   (-> "lambada = (a b: id(a b))(1)(2)"
       parse))
+
+(parse "lambada = (a b: id(a b))(1)(2)")
+(parse "condition = when true: 1 false: 0 end")
+(parse "ds = case variable \"gfd\" : dosomething \"gfrdse\" : dosomethingelse end")
+(parse "condition = case name
+       \"Johannes\" if true: \"Auer\"
+       \"Susan\" if false: \"Ismail\"
+       end")
+(parse "grfsdg = a.b.c.vfds")
+(parse "gds = [gs(3) g (3)]")
+(parse "gds = [gs[3] g [3]]")
+(parse "map = { i:j for x:y if true }")
