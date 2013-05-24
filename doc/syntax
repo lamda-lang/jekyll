@@ -44,3 +44,9 @@ x = y where
     z = a
   end
 end
+
+main(path) = do
+  data = io.read(path)
+  io.write(path)
+end
+
