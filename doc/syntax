@@ -50,3 +50,13 @@ main(path) = do
   io.write(path)
 end
 
+main = do
+  io.print("Hello World")
+end
+
+main(first-name) = do
+  case first-name
+    "johannes" : io.file("auer")
+    "konrad": io.print("kuehne")
+  end
+end
