@@ -1,5 +1,5 @@
-Module = <_*> Definition* <_*>
-Definition = Identity <_*> <'='> <_*> Expression <_*> Scope*
+Definitions = <_*> Definition* <_*>
+Definition = Identity <_*> <'='> <_*> Expression <_*> Scope?
 Scope = <'where'> <_*> (Definition <_*>)* <'end'> <_*>
 Identity = !('nil' | 'true' | 'false' | 'when' | 'case') #'[A-Za-z_]\w*'
 Expression = Identifier | Range | Integer | String | Nil | Boolean | Application | Lambda | List | Map | Set | Identity | Condition | Case | Property | Subscript | Float | Do
