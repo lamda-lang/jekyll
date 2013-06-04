@@ -1,8 +1,8 @@
 Module = <_*> Definition* <_*>
 Definition = Identity <_*> <'='> <_*> Expression <_*> Scope*
 Scope = <'where'> <_*> (Definition <_*>)* <'end'> <_*>
-Identity = !('nil' | 'true' | 'false' | 'when' | 'case') #'[A-Za-z_]\\w*'
-Expression = Identifier | Range | Integer | String | Nil | Boolean | Application | Lambda | List | Map | Set | Identity | Condition | Case | Property | Subscript | Float
+Identity = !('nil' | 'true' | 'false' | 'when' | 'case') #'[A-Za-z_]\w*'
+Expression = Identifier | Range | Integer | String | Nil | Boolean | Application | Lambda | List | Map | Set | Identity | Condition | Case | Property | Subscript | Float | Do
 Expressions = (Expression <_+>)* Expression
 KeyValue = Expression <_*> <':'> <_*> Expression
 KeyValues = (KeyValue <_+>)* KeyValue
@@ -13,13 +13,14 @@ Case = <'case'> <_*> Identity <_+> (Expression <_*> [Guard <_*>] <':'> <_*> Expr
 Property = Expression <'.'> Expression
 Guard = <'if'> <_*> Expressions
 Subscript = Expression <'['> <_*> Expression <_*> <']'>
+Do = <'do'> <_*> (Definition <_*>)* <'end'>
 ListComprehension = Expression <_*> <'for'> <_*> KeyValue <_*> [Guard]
 MapComprehension = KeyValue <_*> <'for'> <_*> KeyValue <_*> [Guard]
 Args = (Identity <_*>)*
 Float = #'-?\d+.\d+'
 Range = ( Expression | Epsilon ) '..' ( Expression | Epsilon )
-Integer = #'-?\\d+'
-String = <'\\"'> #'[^"]*' <'\\"'>
+Integer = #'-?\d+'
+String = <'\"'> #'[^"]*' <'\"'>
 Identifier = <'#'> #'\w+'
 Nil = <'nil'>
 Boolean = 'true' | 'false'
