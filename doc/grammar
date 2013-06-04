@@ -1,21 +1,21 @@
 Definitions = <_*> Definition* <_*>
-Definition = Identity <_*> <'='> <_*> Expression <_*> Scope?
-Scope = <'where'> <_*> (Definition <_*>)* <'end'> <_*>
-Identity = !('nil' | 'true' | 'false' | 'when' | 'case') #'[A-Za-z_]\w*'
-Expression = Identifier | Range | Integer | String | Nil | Boolean | Application | Lambda | List | Map | Set | Identity | Condition | Case | Property | Subscript | Float | Do
+Definition = Identity <_*> <'='> <_*> Expression <_*> [<'where'> <_*> Definitions <'end'> <_*>]
+Identity = !('nil' | 'true' | 'false' | 'when' | 'case' | 'do' | 'if' | 'end') #'[A-Za-z_]\w*'
 Expressions = (Expression <_+>)* Expression
-KeyValue = Expression <_*> <':'> <_*> Expression
+Expression = Identifier | Range | Integer | String | Nil | Boolean | Result | Lambda | List | Map | Set | Identity | When | Case | Property | Subscript | Float | Do
 KeyValues = (KeyValue <_+>)* KeyValue
-Application = ( Identity | Application | Lambda ) <'('>  <_*> [Expressions <_*>] <')'>
-Lambda = <'('> <_*> Args <':'> <_*> Expressions <_*> <')'>
-Condition = <'when'> <_*> (KeyValue <_*>)* <'end'>
+KeyValue = Expression <_*> <':'> <_*> Expression
+Result = ( Identity | Result | Lambda ) <'('>  <_*> [Expressions <_*>] <')'>
+Lambda = <'('> <_*> Args <':'> <_*> Expression <_*> <')'>
+When = <'when'> <_*> (KeyValue <_*>)* <'end'>
 Case = <'case'> <_*> Identity <_+> (Expression <_*> [Guard <_*>] <':'> <_*> Expression <_*>)* <'end'>
 Property = Expression <'.'> Expression
 Guard = <'if'> <_*> Expressions
 Subscript = Expression <'['> <_*> Expression <_*> <']'>
-Do = <'do'> <_*> (Definition <_*>)* <'end'>
+Do = <'do'> <_*> Definitions <'end'>
 ListComprehension = Expression <_*> <'for'> <_*> KeyValue <_*> [Guard]
 MapComprehension = KeyValue <_*> <'for'> <_*> KeyValue <_*> [Guard]
+SetComprehension = Expression <_*> <'for'> <_*> KeyValue <_*> [Guard]
 Args = (Identity <_*>)*
 Float = #'-?\d+.\d+'
 Range = ( Expression | Epsilon ) '..' ( Expression | Epsilon )
@@ -26,5 +26,5 @@ Nil = <'nil'>
 Boolean = 'true' | 'false'
 List = <'['> <_*> ( Expressions | ListComprehension )? <_*> <']'>
 Map =  <'{'> <_*> ( KeyValues   | MapComprehension  )? <_*> <'}'>
-Set =  <'('> <_*> ( Expressions | ListComprehension )? <_*> <')'>
+Set =  <'('> <_*> ( Expressions | SetComprehension )? <_*> <')'>
 _ = #'\s'
