@@ -1,18 +1,23 @@
-Definitions = <_*> Definition* <_*>
-Definition = Identity <_*> <'='> <_*> Expression <_*> [<'where'> <_*> Definitions <'end'> <_*>]
+Definitions = <_*> (Definition | Function | MultiBranchFunction)* <_*>
+Definition = Identity <_*> <'='> <_*> Expression <_*> [Where]
+Function = Identity <'('> <_*> Args <_*> <')'> <_*> <'='> <_*> Expression <_*> [Where]
+MultiBranchFunction = Identity <'('> <_*> Args <_*> <')'> <_*> Branch+ <_*> [Where]
 Identity = !('nil' | 'true' | 'false' | 'when' | 'case' | 'do' | 'if' | 'end') #'[A-Za-z_]\w*'
 Expressions = (Expression <_+>)* Expression
-Expression = Identifier | Range | Integer | String | Nil | Boolean | Result | Lambda | List | Map | Set | Identity | When | Case | Property | Subscript | Float | Do
+Expression = Identifier | Range | Integer | String | Nil | Boolean | Result | Lambda | List | Map | Set | Identity | When | Case | Property | Subscript | Float | Do | Module
 KeyValues = (KeyValue <_+>)* KeyValue
 KeyValue = Expression <_*> <':'> <_*> Expression
 Result = ( Identity | Result | Lambda ) <'('>  <_*> [Expressions <_*>] <')'>
 Lambda = <'('> <_*> Args <':'> <_*> Expression <_*> <')'>
+Where = <'where'> <_*> Definitions <'end'> <_*>
 When = <'when'> <_*> (KeyValue <_*>)* <'end'>
 Case = <'case'> <_*> Identity <_+> (Expression <_*> [Guard <_*>] <':'> <_*> Expression <_*>)* <'end'>
 Property = Expression <'.'> Expression
 Guard = <'if'> <_*> Expressions
 Subscript = Expression <'['> <_*> Expression <_*> <']'>
 Do = <'do'> <_*> Definitions <'end'>
+Branch = Guard <_*> <'='> <_*> Expression <_*>
+Module = <'module'> <':'> String
 ListComprehension = Expression <_*> <'for'> <_*> KeyValue <_*> [Guard]
 MapComprehension = KeyValue <_*> <'for'> <_*> KeyValue <_*> [Guard]
 SetComprehension = Expression <_*> <'for'> <_*> KeyValue <_*> [Guard]
