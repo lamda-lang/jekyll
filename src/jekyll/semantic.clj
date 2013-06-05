@@ -1,6 +1,7 @@
 (ns jekyll.semantic
   (:use [jekyll.zip]
-        [jekyll.parser])
+        [jekyll.parser]
+        [clojure.inspector :only [inspect-tree]])
   (:require [clojure.zip :as zip]))
 
 
@@ -23,6 +24,21 @@
                    :else nil)]
     (Range. nstart nend)))
 
+
+(defn collapse-expressions [matched n]
+  (if matched
+    (let [[_ & exps] n]
+      (into [] exps))))
+
+
+(defn collapse [clean-parse-tree]
+  (tree-edit (zip/vector-zip clean-parse-tree)
+             #(and (vector? %) (or
+                                (= (first %) :Expressions)))
+             collapse-expressions))
+
+
+#_(collapse true [:Expressions [1 2] [3 4]])
 
 (defn typify-definition [matched n]
   (if matched
@@ -53,11 +69,11 @@
 
 (defn simplify-collection [matched n]
   (if matched
-    (let [[k & elems] n]
+    (let [[k elems] n]
       (case k
         :Set (into #{} elems)
         :Map (apply array-map elems)
-        :List elems
+        :List (into [] elems) ; might not match lamda list semantics
         n))
     n))
 
@@ -75,10 +91,10 @@
 (defn lisp-apply [reduced-parse-tree]
   (tree-edit (zip/vector-zip reduced-parse-tree)
              #(and (vector? %)
-                   (= (first %) :Application))
+                   (= (first %) :Result))
              (fn [matched n]
-               (let [[_ sym & args] n]
-                 `(apply ~sym ~(into [] args))))))
+               (let [[_ sym & [args]] n]
+                 `(apply ~sym ~args)))))
 
 
 (defn lisp-eval [reduced-parse-tree]
@@ -89,17 +105,28 @@
                (let [[_ [_ & args] [& body]] n]
                  `(fn ~(into [] args) ~body)))))
 
+(defn lisp-let [reduced-parse-tree]
+  (tree-edit (zip/vector-zip reduced-parse-tree)
+             #(and (vector? %)
+                   (= (first %) :Definitions))
+             (fn [matched [_ & defs]]
+               `(let ~(vec (reduce concat (map rest defs)))))))
+
+
 
 (def plus +)
 
-(defn third [col] (get col 2))
-
-((-> "tfn = (a b: map(identity [1 2 a]))"
+#_(-> "tfn = (a b: map(plus [1 2 a] (10 11 12))) res = tfn(1 2)"
       parse
+      inspect-tree)
+
+#_(-> "tfn = (a b: map(plus [1 2 a] (10 11 12))) res = tfn(1 2)"
+      parse
+      collapse
       typify
+      reduce-collections
       lisp-apply
       lisp-eval
-      second
-      third
+      lisp-let
       eval
-      ) 1 2)
+      )
