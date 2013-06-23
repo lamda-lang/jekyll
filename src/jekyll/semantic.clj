@@ -1,6 +1,7 @@
 (ns jekyll.semantic
   (:use [jekyll.zip]
-        [jekyll.parser])
+        [jekyll.parser]
+        [clojure.inspector :only [inspect-tree]])
   (:require [clojure.zip :as zip]))
 
 
@@ -24,6 +25,21 @@
     (Range. nstart nend)))
 
 
+(defn collapse-expressions [matched n]
+  (if matched
+    (let [[_ & exps] n]
+      (into [] exps))))
+
+
+(defn collapse [clean-parse-tree]
+  (tree-edit (universal-zip clean-parse-tree)
+             #(and (vector? %) (or
+                                (= (first %) :Expressions)))
+             collapse-expressions))
+
+
+#_(collapse-expressions true [:Expressions [1 2] [3 4]])
+
 (defn typify-definition [matched n]
   (if matched
     (if (= :Expression (first n))
@@ -44,7 +60,7 @@
 
 
 (defn typify [clean-parse-tree]
-  (tree-edit (zip/vector-zip clean-parse-tree)
+  (tree-edit (universal-zip clean-parse-tree)
              #(and (vector? %) (or
                                 (= (first %) :Identity)
                                 (= (first %) :Expression)))
@@ -53,17 +69,17 @@
 
 (defn simplify-collection [matched n]
   (if matched
-    (let [[k & elems] n]
+    (let [[k elems] n]
       (case k
         :Set (into #{} elems)
         :Map (apply array-map elems)
-        :List elems
+        :List (into [] elems) ; might not match lamda list semantics
         n))
     n))
 
 
 (defn reduce-collections [clean-parse-tree]
-  (tree-edit (zip/vector-zip clean-parse-tree)
+  (tree-edit (universal-zip clean-parse-tree)
              #(and (vector? %)
                    (or
                     (= (first %) :Set)
@@ -73,33 +89,80 @@
 
 
 (defn lisp-apply [reduced-parse-tree]
-  (tree-edit (zip/vector-zip reduced-parse-tree)
+  (tree-edit (universal-zip reduced-parse-tree)
              #(and (vector? %)
-                   (= (first %) :Application))
+                   (= (first %) :Result))
              (fn [matched n]
-               (let [[_ sym & args] n]
-                 `(apply ~sym ~(into [] args))))))
+               (let [[_ sym & [args]] n]
+                 `(apply ~sym ~args)))))
 
 
 (defn lisp-eval [reduced-parse-tree]
-  (tree-edit (zip/vector-zip reduced-parse-tree)
+  (tree-edit (universal-zip reduced-parse-tree)
              #(and (vector? %)
-                   (= (first %) :Lambda))
+                   (= (first %) :Lamda))
              (fn [matched n]
                (let [[_ [_ & args] [& body]] n]
                  `(fn ~(into [] args) ~body)))))
 
 
+(defn lisp-where [reduced-parse-tree]
+  (tree-edit (universal-zip reduced-parse-tree)
+             #(and (vector? %)
+                   (= (first %) :Definition)
+                   (= (first (last %)) :Where))
+             (fn [matched [_ sym val [_ [_ & defs]]]]
+               `(let ~(vec (reduce concat (map rest defs)))
+                  [:Definition ~sym ~val]))))
+
+
+(defn lisp-when [reduced-parse-tree]
+  (tree-edit (universal-zip reduced-parse-tree)
+             #(and (vector? %)
+                   (= (first %) :When))
+             (fn [matched [_ & conds]]
+               `(cond ~@(reduce concat (map rest conds))))))
+
+
+(defn lisp-case [reduced-parse-tree]
+  (tree-edit (universal-zip reduced-parse-tree)
+             #(and (vector? %)
+                   (= (first %) :Case))
+             (fn [matched [_ & cases]]
+               `(case ~@cases))))
+
+
+; use declare and def to model namespace
+(defn lisp-def [reduced-parse-tree]
+  (tree-edit (universal-zip reduced-parse-tree)
+             #(and (vector? %)
+                   (= (first %) :Definition))
+             (fn [matched [_ sym val]]
+               `(def ~sym ~val))))
+
+
+
 (def plus +)
 
-(defn third [col] (get col 2))
-
-((-> "tfn = (a b: map(identity [1 2 a]))"
+#_(-> "tfn = (a b: map(plus [1 2 a] (10 11 12))) res = tfn(1 2)"
       parse
-      typify
-      lisp-apply
-      lisp-eval
-      second
-      third
-      eval
-      ) 1 2)
+      inspect-tree)
+
+#_(map eval (->
+      "tfn = (a b: map(plus [1 2 a] (c 11 12))) where c = 10 end
+       res = tfn(1 2)
+       theta = when
+          true: 1
+          false: 0
+       end"
+           parse
+           collapse
+           typify
+           reduce-collections
+           lisp-case
+           lisp-when
+           lisp-apply
+           lisp-eval
+           lisp-where
+           lisp-def
+           rest))
