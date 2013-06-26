@@ -1,21 +1,21 @@
 (ns jekyll.bytecode
   (:import (java.nio ByteBuffer ByteOrder)
-           (java.lang Byte))
-  (:require [clojure.math.numeric-tower :as math]))
+           (java.lang Byte)))
 
 
 ;; helper functions
 
-(defn intToBytes
+(defn int2bytes
   "Returns length nbytes Byte array representation of i"
   [i nbytes]
   (.array (.putInt (.order (ByteBuffer/allocate nbytes)
                            ByteOrder/LITTLE_ENDIAN)
                    i)))
 
-(defn bits [n s]
+(defn bits
   "Returns sequence of s bits for an integer n, the bit order being from most
    to least significant. If the last bit is set, n is negative."
+  [n s]
   (reverse (take s (map
                     (fn [i] (bit-and 0x01 i))
                     (iterate (fn [i] (bit-shift-right i 1))
@@ -30,23 +30,19 @@
             (- xpos 128)
             xpos))))
 
-(defn var-byte-array
-  "Returns length nbytes Byte array representation of i
-   (nbytes <= capacity)"
-  [i nbytes capacity]
-  (if (and (<= nbytes capacity) (pos? nbytes))
-    (let [len (* nbytes 7)
-          all-bytes-used (= nbytes capacity)
-          degen-bytes (partition 7 (bits i (if all-bytes-used (inc len) len)))
+(defn join-byte-arrays [& byte-arrays]
+  (loop [bb (ByteBuffer/allocate (apply + (map count byte-arrays)))
+         i 0]
+    (if (< i (count byte-arrays))
+      (recur (.put bb (nth byte-arrays i))
+             (inc i))
+      (.array bb) )))
 
-          first-bytes (map #(bits2byte (concat % [1]))
-                          (take (dec nbytes) degen-bytes))
-          last-byte (if all-bytes-used
-                      (bits2byte (concat (last degen-bytes)
-                                         [(if (even? i) 0 1)]))
-                      (bits2byte (concat (last degen-bytes) [0])))]
-      (byte-array (conj (vec first-bytes) last-byte)))
-    [] ))
+(defn get-bytes [barray]
+  (map identity (barray)))
+
+(defn get-bits [barray]
+  (map #(bits % 8) barray))
 
 
 ;; byte array representations for integers
@@ -59,23 +55,27 @@
 (defn i32fle
   "Returns length 4 byte array representation of i"
   [i]
-  (intToBytes i 4))
+  (int2bytes i 4))
 
 (defn i64fle
   "Returns length 8 byte array representation of i"
   [i]
-  (intToBytes i 8))
+  (int2bytes i 8))
 
 (defn i32vle
-  "Returns byte array representation of i (max length 4)"
+  "Returns variable length byte array representation of i"
   [i]
-  (cond
-   (and (>= i -64)        (< i 64))        (var-byte-array i 1 4)
-   (and (>= i -8192)      (< i 8192))      (var-byte-array i 2 4)
-   (and (>= i -1048576)   (< i 1048576))   (var-byte-array i 3 4)
-   (and (>= i -268435456) (< i 268435456)) (var-byte-array i 4 4)
-   :else []))
-
+  (let [int-bits (get-bits (i32fle i))
+        degen-bytes (drop-while
+                     (partial every? zero?)
+                     (reverse
+                      (partition 7 7 [0 0 0 0 0 0 0]
+                                 (reverse (flatten (reverse int-bits))))))
+        first-bytes (map #(bits2byte (reverse (conj % 1)))
+                         (butlast degen-bytes))
+        last-byte (bits2byte (reverse (conj (last degen-bytes) 0)))]
+    (byte-array (conj (vec first-bytes) last-byte))
+    ))
 
 ;; byte array representations for floats
 
@@ -84,68 +84,62 @@
   [f]
   (.array (.putDouble (.order (ByteBuffer/allocate 8)
                            ByteOrder/LITTLE_ENDIAN)
-                      i)))
+                      f)))
+
 
 ;;
 ;; MAIN - type conversion to bytecode
 ;;
 
-(defn nilToBin []
+(defn nil2bin []
   (i8fle 0))
 
-(defn trueToBin []
+(defn true2bin []
   (i8fle 1))
 
-(defn falseToBin []
+(defn false2bin []
   (i8fle 2))
 
-(defn intToBin [integer]
+(defn int2bin [integer]
   (let [type (i8fle 3)
-        value (i64fle integer)
-        nbytes (ByteBuffer/allocate (+ 1 8))]
-    (.array (.put (.put nbytes type) value))))
+        value (i64fle integer)]
+    (join-byte-arrays type value)))
 
-(defn floatToBin [float]
+(defn float2bin [float]
   (let [type (i8fle 4)
-        value (f64fle float)
-        nbytes (ByteBuffer/allocate (+ 1 8))]
-    (.array (.put (.put nbytes type) value))))
+        value (f64fle float)]
+    (join-byte-arrays type value)))
 
-(defn idToBin [id l]
-  (let [type (i8fle 5)
-        length (18fle l)
-        ;; codepoint?
-        nbytes (ByteBuffer/allocate (+ 1 1))]
-    (.array (.put (.put nbytes type) length))))
+(defn id2bin [identifier]
+  (let [str (rest (str identifier))
+        type (i8fle 5)
+        length (i8fle (count str))
+        content (apply join-byte-arrays (map (comp i8fle int) str))]
+    (join-byte-arrays type length content)))
 
-(defn strToBin [str l]
+(defn str2bin [string]
   (let [type (i8fle 6)
-        length (i32vle l)
-        ;; codepoint?
-        nbytes (ByteBuffer/allocate (+ 1 1))]
-    (.array (.put (.put nbytes type) length))))
+        length (i32vle (count string))
+        content (apply join-byte-arrays (map (comp i32vle int) string))]
+    (join-byte-arrays type length content)))
 
-(defn rngToBin [start-ind end-ind]
+(defn rng2bin [range]
   (let [type (i8fle 7)
         start (i32vle start-ind)
-        end (i32vle end-ind)
-        nbytes (ByteBuffer/allocate (+ 1 (count start) (count end)))]
-    (.array (.put (.put nbytes type) length))))
+        end (i32vle end-ind)]
+    (join-byte-arrays type)))
 
-(defn setToBin [l]
+(defn set2bin [set]
   (let [type (i8fle 8)
-        num-el (i32vle l)
-        ;; elem-ind?
-        nbytes (ByteBuffer/allocate (+ 1 (count num-el)))]
-    (.array (.put (.put nbytes type) length))))
+        length (i32vle (count set))]
+    (join-byte-arrays type length content)))
 
+(defn list2bin [list]
+  (let [type (i8fle 8)
+        length (i32vle (count list))]
+    (join-byte-arrays type length content)))
 
-;;
-;; appendix - printing functions for byte arrays
-;;
-
-(defn print-bytes [barray]
-  (map #(get barray %) (range (count barray))))
-
-(defn print-bits [barray]
-  (map #(bits % 8) (print-bytes barray)))
+(defn map2bin [map]
+  (let [type (i8fle 8)
+        length (i32vle (count map))]
+    (join-byte-arrays type length content)))
