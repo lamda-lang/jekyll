@@ -123,23 +123,76 @@
         content (apply join-byte-arrays (map (comp i32vle int) string))]
     (join-byte-arrays type length content)))
 
-(defn rng2bin [range]
+(defn rng2bin [start-ind end-ind]
   (let [type (i8fle 7)
         start (i32vle start-ind)
         end (i32vle end-ind)]
-    (join-byte-arrays type)))
+    (join-byte-arrays type start end)))
 
-(defn set2bin [set]
+(defn set2bin [set-inds]
   (let [type (i8fle 8)
-        length (i32vle (count set))]
+        length (i32vle (count set-inds))
+        content (apply join-byte-arrays (map i32vle set-inds))]
     (join-byte-arrays type length content)))
 
-(defn list2bin [list]
-  (let [type (i8fle 8)
-        length (i32vle (count list))]
+(defn list2bin [list-inds]
+  (let [type (i8fle 9)
+        length (i32vle (count list-inds))
+        content (apply join-byte-arrays (map i32vle list-inds))]
     (join-byte-arrays type length content)))
 
-(defn map2bin [map]
-  (let [type (i8fle 8)
-        length (i32vle (count map))]
+(defn map2bin [map-inds]
+  (let [type (i8fle 10)
+        length (i32vle (count map-inds))
+        content (apply join-byte-arrays (map i32vle (reduce into [] map-inds)))]
     (join-byte-arrays type length content)))
+
+(defn module2bin [mod-inds]
+  (let [type (i8fle 11)
+        length (i32vle (count mod-inds))
+        content (apply join-byte-arrays (map i32vle (reduce into [] mod-inds)))]
+    (join-byte-arrays type length content)))
+
+(defn do2bin [do-inds]
+  (let [type (i8fle 12)
+        length (i32vle (count do-inds))
+        content (apply join-byte-arrays (map i32vle do-inds))]
+    (join-byte-arrays type length content)))
+
+(defn lambda2bin [arity context-inds code]
+  (let [type (i8fle 13)
+        arity (i8fle arity)
+        context-count (i8fle (count context-inds))
+        context (apply join-byte-arrays (map i32vle context-inds))]
+    (join-byte-arrays type arity context-count context code)))
+
+(defn import2bin [name-ind]
+  (join-byte-arrays (i8fle 14) (i32vle name-ind)))
+
+(defn when2bin [cond-inds]
+  (let [type (i8fle 15)
+        cond-count (i32vle (count cond-inds))
+        conditions (apply join-byte-arrays
+                          (map i32vle (reduce into [] cond-inds)))]
+    (join-byte-arrays type cond-count conditions)))
+
+(defn case2bin [arg-ind match-inds guard-inds value-inds]
+  (let [type (i8fle 16)
+        arg (i32vle arg-ind)
+        case-count (i8fle (count match-inds))
+        cases (apply join-byte-arrays
+                       (map i32vle
+                            (flatten
+                             (map vec match-inds guard-inds value-inds))))]
+    (join-byte-arrays type arg case-count cases)))
+
+(defn res2bin [lambda-ind arg-inds]
+  (let [type (i8fle 17)
+        lambda (i32vle lambda-ind)
+        arg-count (i8fle (count arg-inds))
+        args (apply join-byte-arrays
+                       (map i32vle arg-inds))]
+    (join-byte-arrays type lambda arg-count args)))
+
+(defn input2bin [inp-ind]
+  (join-byte-arrays (i8fle 18) (i8fle inp-ind)))
