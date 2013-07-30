@@ -47,8 +47,8 @@
             [v] vs]
         (case k
           :String v
-          :Identity (symbol v)
-          :Identifier (keyword v)
+          :Variable (symbol v)
+          :Token (keyword v)
           :Integer  (. Integer parseInt v)
           :Float (. Float parseFloat v)
           :Range (rangify (correct-bound (first vs)) (correct-bound (last vs)))
@@ -62,7 +62,7 @@
 (defn typify [clean-parse-tree]
   (tree-edit (universal-zip clean-parse-tree)
              #(and (vector? %) (or
-                                (= (first %) :Identity)
+                                (= (first %) :Variable)
                                 (= (first %) :Expression)))
              typify-definition))
 

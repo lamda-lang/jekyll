@@ -1,36 +1,36 @@
 Module = ( <_> | DefinitionAll | Use | Import )*
 DefinitionAll = (Definition | Function | MultiBranchFunction)
-Definition = Identity <_*> <'='> <_*> Expression [<_+> Where]
-Function = Identity <'('> <_*> Args <_*> <')'> <_*> <'='> <_*> Expression [<_+> Where]
-MultiBranchFunction = Identity <'('> <_*> Args <_*> <')'> <_*> (Branch <_*>)+ [<_+> Where]
+Definition = Variable <_*> <'='> <_*> Expression [<_+> Where]
+Function = Variable <'('> <_*> Args <_*> <')'> <_*> <'='> <_*> Expression [<_+> Where]
+MultiBranchFunction = Variable <'('> <_*> Args <_*> <')'> <_*> (Branch <_*>)+ [<_+> Where]
 Keyword = 'nil' | 'true' | 'false' | 'when' | 'case' | 'do' | 'if' | 'end' | 'use' | 'import' | 'only' | 'hide'
-Identity = !Keyword #'[A-Za-z_]\w*'
+Variable = !Keyword #'[A-Za-z_]\w*'
 Expressions = (Expression <_+>)* Expression
-Expression = Identifier | Range | Integer | String | Nil | Boolean | Result | Lamda | List | Map | Set | Identity | When | Case | Property | Subscript | Float | Do | ListComprehension | SetComprehension | MapComprehension
+Expression = Token | Range | Integer | String | Nil | Boolean | Result | Lamda | List | Map | Set | Variable | When | Case | Property | Subscript | Float | Do | ListComprehension | SetComprehension | MapComprehension
 KeyValues = (KeyValue <_+>)* KeyValue
 KeyValue = Expression <_*> <':'> <_*> Expression
-Result = ( Identity | Result | Lamda ) <'('>  <_*> [Expressions <_*>] <')'>
+Result = ( Variable | Result | Lamda ) <'('>  <_*> [Expressions <_*>] <')'>
 Lamda = <'('> <_*> Args <':'> <_*> Expression <_*> <')'>
 Where = <'where'> <_+> (DefinitionAll <_*>)* <'end'>
 When = <'when'> <_+> (KeyValue <_*>)* <'end'>
-Case = <'case'> <_+> Identity <_+> (Expression [<_+> Guard] <_*> <':'> <_*> Expression <_*>)* <'end'>
+Case = <'case'> <_+> Variable <_+> (Expression [<_+> Guard] <_*> <':'> <_*> Expression <_*>)* <'end'>
 Property = Expression <'.'> Expression
 Guard = <'if'> <_+> Expressions
 Subscript = Expression <'['> <_*> Expression <_*> <']'>
 Do = <'do'> <_+> (DefinitionAll <_*>)*  <'end'>
 Branch = Guard <_*> <'='> <_*> Expression
-Namespace = (Identity <'.'>)* Identity
-Use = <'use'> <_+> Namespace [<_+> ('only'|'hide') (<_+> Identity)+ ] <#'[ \t]*'> <'\n'>
-Import = <'import'> <_+> Namespace [<_+> 'as' <_+> Identity ] <#'[ \t]*'> <'\n'>
+Namespace = (Variable <'.'>)* Variable
+Use = <'use'> <_+> Namespace [<_+> ('only'|'hide') (<_+> Variable)+ ]
+Import = <'import'> <_+> Namespace [<_+> 'as' <_+> Variable ]
 ListComprehension = <'['> <_*> Expression <_+> <'for'> <_+> KeyValue [<_+> Guard] <_*> <']'>
 MapComprehension = <'{'> <_*> KeyValue <_+> <'for'> <_+> KeyValue [<_+> Guard] <_*> <'}'>
 SetComprehension = <'('> <_*> Expression <_+> <'for'> <_+> KeyValue [<_+> Guard] <_*> <')'>
-Args = (Identity <_*>)*
+Args = (Variable <_*>)*
 Float = #'-?\d+\.\d+'
 Range = ( Expression | Epsilon ) '..' ( Expression | Epsilon )
 Integer = #'-?\d+'
 String = <'\"'> #'[^"]*' <'\"'>
-Identifier = <'#'> #'\w+'
+Token = <'#'> #'\w+'
 Nil = <'nil'>
 Boolean = 'true' | 'false'
 List = <'['> [<_*> Expressions] <_*> <']'>
