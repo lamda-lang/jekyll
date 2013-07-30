@@ -1,26 +1,30 @@
-Definitions = <_*> (Definition | Function | MultiBranchFunction)* <_*>
-Definition = Identity <_*> <'='> <_*> Expression <_*> [Where]
-Function = Identity <'('> <_*> Args <_*> <')'> <_*> <'='> <_*> Expression <_*> [Where]
-MultiBranchFunction = Identity <'('> <_*> Args <_*> <')'> <_*> Branch+ <_*> [Where]
-Identity = !('nil' | 'true' | 'false' | 'when' | 'case' | 'do' | 'if' | 'end') #'[A-Za-z_]\w*'
+Module = ( <_> | DefinitionAll | Use | Import )*
+DefinitionAll = (Definition | Function | MultiBranchFunction)
+Definition = Identity <_*> <'='> <_*> Expression [<_+> Where]
+Function = Identity <'('> <_*> Args <_*> <')'> <_*> <'='> <_*> Expression [<_+> Where]
+MultiBranchFunction = Identity <'('> <_*> Args <_*> <')'> <_*> (Branch <_*>)+ [<_+> Where]
+Keyword = 'nil' | 'true' | 'false' | 'when' | 'case' | 'do' | 'if' | 'end' | 'use' | 'import' | 'only' | 'hide'
+Identity = !Keyword #'[A-Za-z_]\w*'
 Expressions = (Expression <_+>)* Expression
-Expression = Identifier | Range | Integer | String | Nil | Boolean | Result | Lamda | List | Map | Set | Identity | When | Case | Property | Subscript | Float | Do | Module
+Expression = Identifier | Range | Integer | String | Nil | Boolean | Result | Lamda | List | Map | Set | Identity | When | Case | Property | Subscript | Float | Do | ListComprehension | SetComprehension | MapComprehension
 KeyValues = (KeyValue <_+>)* KeyValue
 KeyValue = Expression <_*> <':'> <_*> Expression
 Result = ( Identity | Result | Lamda ) <'('>  <_*> [Expressions <_*>] <')'>
 Lamda = <'('> <_*> Args <':'> <_*> Expression <_*> <')'>
-Where = <'where'> <_*> Definitions <'end'> <_*>
-When = <'when'> <_*> (KeyValue <_*>)* <'end'>
-Case = <'case'> <_*> Identity <_+> (Expression <_*> [Guard <_*>] <':'> <_*> Expression <_*>)* <'end'>
+Where = <'where'> <_+> (DefinitionAll <_*>)* <'end'>
+When = <'when'> <_+> (KeyValue <_*>)* <'end'>
+Case = <'case'> <_+> Identity <_+> (Expression [<_+> Guard] <_*> <':'> <_*> Expression <_*>)* <'end'>
 Property = Expression <'.'> Expression
-Guard = <'if'> <_*> Expressions
+Guard = <'if'> <_+> Expressions
 Subscript = Expression <'['> <_*> Expression <_*> <']'>
-Do = <'do'> <_*> Definitions <'end'>
-Branch = Guard <_*> <'='> <_*> Expression <_*>
-Module = <'module'> <':'> String
-ListComprehension = Expression <_*> <'for'> <_*> KeyValue <_*> [Guard]
-MapComprehension = KeyValue <_*> <'for'> <_*> KeyValue <_*> [Guard]
-SetComprehension = Expression <_*> <'for'> <_*> KeyValue <_*> [Guard]
+Do = <'do'> <_+> (DefinitionAll <_*>)*  <'end'>
+Branch = Guard <_*> <'='> <_*> Expression
+Namespace = (Identity <'.'>)* Identity
+Use = <'use'> <_+> Namespace [<_+> ('only'|'hide') (<_+> Identity)+ ] <#'[ \t]*'> <'\n'>
+Import = <'import'> <_+> Namespace [<_+> 'as' <_+> Identity ] <#'[ \t]*'> <'\n'>
+ListComprehension = <'['> <_*> Expression <_+> <'for'> <_+> KeyValue [<_+> Guard] <_*> <']'>
+MapComprehension = <'{'> <_*> KeyValue <_+> <'for'> <_+> KeyValue [<_+> Guard] <_*> <'}'>
+SetComprehension = <'('> <_*> Expression <_+> <'for'> <_+> KeyValue [<_+> Guard] <_*> <')'>
 Args = (Identity <_*>)*
 Float = #'-?\d+\.\d+'
 Range = ( Expression | Epsilon ) '..' ( Expression | Epsilon )
@@ -29,7 +33,7 @@ String = <'\"'> #'[^"]*' <'\"'>
 Identifier = <'#'> #'\w+'
 Nil = <'nil'>
 Boolean = 'true' | 'false'
-List = <'['> <_*> ( Expressions | ListComprehension )? <_*> <']'>
-Map =  <'{'> <_*> ( KeyValues   | MapComprehension  )? <_*> <'}'>
-Set =  <'('> <_*> ( Expressions | SetComprehension )? <_*> <')'>
+List = <'['> [<_*> Expressions] <_*> <']'>
+Map =  <'{'> [<_*> KeyValues] <_*> <'}'>
+Set =  <'('> [<_*> Expressions] <_*> <')'>
 _ = #'\s'

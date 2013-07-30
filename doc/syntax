@@ -1,5 +1,7 @@
-math = module:"math.jkl"
-server = module:"server.jkl"
+use math
+use math only plus minus
+use math hide  plus minus
+import math.matrix as matrix
 
 sum = math.sum
 
