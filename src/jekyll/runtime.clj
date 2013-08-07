@@ -35,4 +35,4 @@
 (defmethod jeval :RESULT [[_ lambda_index arg_count & arg_index-arg_count]]
   (apply (jeval lambda_index) (map jeval arg_index-arg_count)))
 
-#_(jeval [:RESULT [:LAMBDA 1 1 -1 [:INTEGER 0 0 0 0 0 0 0 42]] 0])
+#_(jeval [:RESULT [:LAMBDA 0 1 -1 [:INTEGER 0 0 0 0 0 0 0 42]] 0])
