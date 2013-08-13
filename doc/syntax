@@ -5,6 +5,13 @@ import math.matrix as matrix
 
 sum = math.sum
 
+point = type
+      x y
+end
+
+x = point[x]
+y = point.y
+
 bla = sum(1)
 
 nothing = nil
@@ -29,8 +36,6 @@ range = ..3
 
 call = sum(1)
 element = list[1]
-module = math.sum
-module = math["sum"]
 
 a = module(b).sinus
 

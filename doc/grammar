@@ -3,10 +3,10 @@ DefinitionAll = (Definition | Function | MultiBranchFunction)
 Definition = Variable <_*> <'='> <_*> Expression [<_+> Where]
 Function = Variable <'('> <_*> Args <_*> <')'> <_*> <'='> <_*> Expression [<_+> Where]
 MultiBranchFunction = Variable <'('> <_*> Args <_*> <')'> <_*> (Branch <_*>)+ [<_+> Where]
-Keyword = 'nil' | 'true' | 'false' | 'when' | 'case' | 'do' | 'if' | 'end' | 'use' | 'import' | 'only' | 'hide'
+Keyword = 'nil' | 'true' | 'false' | 'when' | 'case' | 'do' | 'if' | 'end' | 'use' | 'import' | 'only' | 'hide' | 'type'
 Variable = !Keyword #'[A-Za-z_]\w*'
 Expressions = (Expression <_+>)* Expression
-Expression = Token | Range | Integer | String | Nil | Boolean | Result | Lamda | List | Map | Set | Variable | When | Case | Property | Subscript | Float | Do | ListComprehension | SetComprehension | MapComprehension
+Expression = Token | Range | Integer | String | Nil | Boolean | Result | Lamda | List | Map | Set | Variable | When | Case | Property | Subscript | Float | Do | ListComprehension | SetComprehension | MapComprehension | Type
 KeyValues = (KeyValue <_+>)* KeyValue
 KeyValue = Expression <_*> <':'> <_*> Expression
 Result = ( Variable | Result | Lamda ) <'('>  <_*> [Expressions <_*>] <')'>
@@ -36,4 +36,5 @@ Boolean = 'true' | 'false'
 List = <'['> [<_*> Expressions] <_*> <']'>
 Map =  <'{'> [<_*> KeyValues] <_*> <'}'>
 Set =  <'('> [<_*> Expressions] <_*> <')'>
+Type = <'type'> <_*> (Variable <_*>)+ <'end'>
 _ = #'\s'
