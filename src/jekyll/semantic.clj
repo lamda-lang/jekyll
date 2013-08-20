@@ -165,4 +165,4 @@
            lisp-eval
            lisp-where
            lisp-def
-           rest))
+           ))

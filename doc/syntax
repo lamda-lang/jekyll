@@ -59,10 +59,6 @@ lastname(x) = case x
    "Johannes": "Auer"
 end
 
-f(x)
-  if true = 1
-  if false = 2
-
 a = 1
 x = y where
   y = z where
@@ -77,3 +73,8 @@ f(x y z) = l3 where
 end
 
 f(x) = 1
+
+rect = protocol
+  width(rect)
+  height(rect)
+end
