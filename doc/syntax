@@ -9,7 +9,6 @@ point = type
       x y
 end
 
-x = point[x]
 y = point.y
 
 bla = sum(1)
@@ -35,9 +34,7 @@ range = 1..
 range = ..3
 
 call = sum(1)
-element = list[1]
 
-a = module(b).sinus
 
 
 lamda = (x:1)
