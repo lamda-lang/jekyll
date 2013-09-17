@@ -15,7 +15,7 @@ Where = <'where'> <_+> (DefinitionAll <_*>)* <'end'>
 When = <'when'> <_+> (KeyValue <_*>)* <'end'>
 Case = <'case'> <_+> Identifier <_+> (Expression [<_+> Guard] <_*> <':'> <_*> Expression <_*>)* <'end'>
 Identifier = Component (<'.'> Component)*
-Guard = <'if'> <_+> Expressions
+Guard = <'if'> <_+> Expression
 Do = <'do'> <_+> (DefinitionAll <_*>)*  <'end'>
 Branch = Guard <_*> <'='> <_*> Expression
 Namespace = (Identifier <'.'>)* Identifier
