@@ -30,6 +30,9 @@ list = [x for x:generator if true]
 set = (x for x:generator if true)
 map = {x:y for x:generator1 if true}
 
+list = [x for x in generator if true]
+map = {x:y for x:y in generator if true}
+
 range = 1..3
 range = 1..
 range = ..3
@@ -78,3 +81,9 @@ rect = protocol
   width(rect)
   height(rect)
 end
+
+x = 1 + 2
+y = (1 + 3)
+z = (1 + 2) * 3
+
+&& = and

@@ -1,7 +1,8 @@
 (ns jekyll.semantic
   (:use [jekyll.zip]
         [jekyll.parser]
-        [clojure.inspector :only [inspect-tree]])
+        [clojure.inspector :only [inspect-tree]]
+        [jekyll.bytecode])
   (:require [clojure.zip :as zip]))
 
 
@@ -34,7 +35,8 @@
 (defn collapse [clean-parse-tree]
   (tree-edit (universal-zip clean-parse-tree)
              #(and (vector? %) (or
-                                (= (first %) :Expressions)))
+                                (= (first %) :Expressions)
+                                (= (first %) :DefinitionAll)))
              collapse-expressions))
 
 
@@ -66,6 +68,61 @@
                                 (= (first %) :Expression)))
              typify-definition))
 
+(defn expression2bytes [matched n]
+  (if matched
+    (if (= :Expression (first n))
+      (let [[k & vs] (second n)
+            [v] vs]
+        (case k
+;          :String (str2bin v)
+;          :Variable (id2bin v)
+;          :Token (token2bin v)
+          :Integer (int2bin (. Integer parseInt v))
+          :Float (float2bin (. Float parseFloat v))
+          :Nil (nil2bin)
+          :Boolean (if (= v "true") (true2bin) (false2bin))
+;          :Result (res2bin v)
+;          :List (list2bin v)
+;          :Map (map2bin v)
+;         :Set (set2bin v)
+;         :ListComprehension (list-comp2bin v)
+;          :MapComprehension (map-comp2bin v)
+;          :SetComprehension (set-comp2bin v)
+;          :Do (do2bin v)
+;          :Case (case2bin v)
+;          :When (when2bin v)
+;          :Range (rng2bin (first vs) (last vs))
+;          :Protocol (protocol2bin v)
+;          :Type (type2bin v)
+          n))
+      (id2bin (second n)))
+    n))
+
+(defn binarize-expressions [clean-parse-tree]
+  (tree-edit (universal-zip clean-parse-tree)
+             #(and (vector? %) (or
+                                (= (first %) :Variable)
+                                (= (first %) :Expression)))
+             expression2bytes))
+
+(defn join-bytes
+  "Turns a tree of byte-arrays into one huge byte-array"
+  [tree]
+  (join-byte-arrays (flatten tree)))
+
+(-> "res = func(2)"
+           parse
+           collapse
+           binarize-expressions
+;           typify
+;           reduce-collections
+;           lisp-case
+;           lisp-when
+;           lisp-apply
+;           lisp-eval
+;           lisp-where
+;           lisp-def
+           )
 
 (defn simplify-collection [matched n]
   (if matched
