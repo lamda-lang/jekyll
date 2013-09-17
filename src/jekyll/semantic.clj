@@ -49,7 +49,7 @@
             [v] vs]
         (case k
           :String v
-          :Variable (symbol v)
+          :Identifier (symbol (second v))
           :Token (keyword v)
           :Integer  (. Integer parseInt v)
           :Float (. Float parseFloat v)
@@ -57,14 +57,14 @@
           :Boolean (= v "true")
           :Nil nil
           (second n)))
-      (symbol (second n)))
+      (symbol (second (second n))))
     n))
 
 
 (defn typify [clean-parse-tree]
   (tree-edit (universal-zip clean-parse-tree)
              #(and (vector? %) (or
-                                (= (first %) :Variable)
+                                (= (first %) :Identifier)
                                 (= (first %) :Expression)))
              typify-definition))
 
