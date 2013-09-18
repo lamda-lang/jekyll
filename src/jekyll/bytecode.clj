@@ -1,65 +1,8 @@
 (ns jekyll.bytecode
+  (:use jekyll.bitsnbytes)
   (:import (java.nio ByteBuffer ByteOrder)
            (java.lang Byte)))
 
-
-;; helper functions
-
-(defn- int2bytes
-  "Returns length nbytes Byte array representation of i"
-  [i nbytes]
-  (.array (.putInt (.order (ByteBuffer/allocate nbytes)
-                           ByteOrder/LITTLE_ENDIAN)
-                   i)))
-
-(defn- bits
-  "Returns sequence of s bits for an integer n, the bit order being from most
-   to least significant. If the last bit is set, n is negative."
-  [n s]
-  (reverse (take s (map
-                    (fn [i] (bit-and 0x01 i))
-                    (iterate (fn [i] (bit-shift-right i 1))
-                             n)))))
-
-(defn- bits2byte
-  "Turns a sequence of zeros and ones to a Byte"
-  [bit-seq]
-  (let [xpos (read-string (apply str (concat "2r" (rest bit-seq))))
-        signum (first bit-seq)]
-    (byte (if (= signum 1)
-            (- xpos 128)
-            xpos))))
-
-(defn join-byte-arrays [& byte-arrays]
-  (loop [bb (ByteBuffer/allocate (apply + (map count byte-arrays)))
-         i 0]
-    (if (< i (count byte-arrays))
-      (recur (.put bb (nth byte-arrays i))
-             (inc i))
-      (.array bb) )))
-
-(defn- get-bytes [barray]
-  (map identity (barray)))
-
-(defn- get-bits [barray]
-  (map #(bits % 8) barray))
-
-(defn- compress
-  "Compresses a byte-array; the last bit of each byte shows if the compressed array has reached its end"
-  [barray]
-  (let [bits (get-bits barray)
-        degen-bytes (drop-while
-                     (partial every? zero?)
-                     (reverse
-                      (partition 7 7 [0 0 0 0 0 0 0]
-                                 (reverse (flatten (reverse bits))))))
-        first-bytes (map #(bits2byte (reverse (conj % 1)))
-                         (butlast degen-bytes))
-        last-byte (bits2byte (reverse (conj (last degen-bytes) 0)))]
-    (byte-array (conj (vec first-bytes) last-byte))))
-
-(defn- correct-bound [b]
-  (if (= b "..") (nil2bin) b))
 
 ;; byte array representations for integers
 
@@ -79,23 +22,37 @@
   (compress (int2bytes i 8)))
 
 
-;; byte array representations for floats
+;; byte array representations for floats      --> faulty !!!
 
 (defn- f64
-  "Returns max length 8 byte array representation of f"
+  "Returns variable length byte array representation of f (max. 64 bits)"
   [f]
-  (compress (.array (.putDouble (.order (ByteBuffer/allocate 8)
-                                        ByteOrder/LITTLE_ENDIAN)
-                                f))))
+  (compress (double2bytes f 8)))
+
+;; check:
+(get-bits (double2bytes 1.0 8))
+(get-bits (compress (double2bytes 1.0 8)))
 
 
-;; byte array representation of string  --> check!
+;; byte array representation for strings
 
-(defn- utf32 [str]
-  (apply join-byte-arrays (map (comp i32 int) str)))
+(defn- utf32
+  "Returns variable length utf-32 encoded string"
+  [string]
+  (map #(compress (.getBytes (str %) "utf-32le")) string))
 
-(defn- ascii [str]
-  (apply join-byte-arrays (map (comp i8 int) str)))
+(defn- ascii
+  "Returns variable length ascii encoded string"
+  [str]
+  (.getBytes str "us-ascii"))
+
+(get-bits (ascii "ab"))
+(get-bits (utf32 "a"))
+
+;; little helper for range
+
+(defn- correct-bound [b]
+  (if (= b "..") (nil2bin) b))
 
 
 
@@ -105,10 +62,10 @@
 
 
 (defn true2bin []
-  [(i8 0)])
+  (i8 0))
 
 (defn false2bin []
-  [(i8 1)])
+  (i8 1))
 
 (defn case2bin [case]
   (let [type (i8 2)
@@ -144,11 +101,12 @@
         value (f64 float)]
     [type value]))
 
-(defn id2bin [chars]  ;; codepoints?
+(defn id2bin [components]
   (let [type (i8 8)
-        length (i8 (count chars))
-        content (ascii chars)]
-    [type length content]))
+        ncomp (i8 (count components))
+        content (map #(let [comp (second %)]
+                        [(i8 (count comp)) (ascii comp)]) components)]
+    [type ncomp content]))
 
 (defn int2bin [integer]
   (let [type (i8 9)
@@ -177,7 +135,7 @@
     [type length content]))
 
 (defn nil2bin []
-  [(i8 14)])
+  (i8 14))
 
 (defn protocol2bin [signatures]
   (let [type (i8 15)
@@ -185,9 +143,10 @@
     [type length signatures]))
 
 (defn rng2bin [lower upper]
-  (let [start (correct-bound lower)
+  (let [type (i8 16)
+        start (correct-bound lower)
         end (correct-bound upper)]
-    [(i8 16) start end]))
+    [type start end]))
 
 (defn res2bin [result]
   (let [type (i8 17)
@@ -203,13 +162,12 @@
 (defn str2bin [string]
   (let [type (i8 19)
         length (i32 (count string))
-        content (utf32 str)]
+        content (utf32 string)]
     [type length content]))
 
 (defn token2bin [token]
-  (let [str (rest (str token))
-        type (i8 20)
-        length (i8 (count str))
+  (let [type (i8 20)
+        length (i8 (count token))
         content (ascii token)]
     [type length content]))
 
