@@ -51,8 +51,8 @@
 
 ;; little helper for range
 
-(defn- correct-bound [b]
-  (if (= b "..") (nil2bin) b))
+(defn- correct [bound]
+  (if (= bound "..") (nil2bin) bound))
 
 
 
@@ -69,8 +69,14 @@
 
 (defn case2bin [case]
   (let [type (i8 2)
-        [arg & cases] case
-        case-count (i32 (count cases))]
+        [arg & css] case
+        case-count (i32 (count css))
+        cases (map #(let [vs (rest %)
+                          match (first vs)
+                          guard (if (< (count vs) 3) (nil2bin) (second (second vs)))
+                          value (last vs)]
+                      [match guard value])
+                 css)]
     [type arg case-count cases]))
 
 (defn list-comp2bin [comp] ; --> keyvalues? guard?
@@ -93,8 +99,9 @@
 
 (defn do2bin [elements]
   (let [type (i8 6)
-        length (i32 (count elements))]
-    [type length elements]))
+        length (i32 (count elements))
+        elems (map #(rest (first %)) elements)]
+    [type length elems]))
 
 (defn float2bin [float]
   (let [type (i8 7)
@@ -115,7 +122,8 @@
 
 (defn lambda2bin [lambda]
   (let [type (i8 10)
-        [args value] lambda
+        value (second lambda)
+        args (rest (first lambda))
         arity (i8 (count args))]
     [type value arity args]))
 
@@ -126,8 +134,9 @@
 
 (defn map2bin [elements]
   (let [type (i8 12)
-        length (i32 (count elements))]
-    [type length elements]))
+        elems (map rest (rest elements))
+        length (i32 (count elems))]
+    [type length elems]))
 
 (defn module2bin [content]  ;; open
   (let [type (i8 13)
@@ -139,13 +148,14 @@
 
 (defn protocol2bin [signatures]
   (let [type (i8 15)
-        length (i32 (count signatures))]
-    [type length signatures]))
+        length (i32 (count signatures))
+        sign (map #(vector (second %) (i8 (count (rest (last %))))) signatures)]
+    [type length sign]))
 
 (defn rng2bin [lower upper]
   (let [type (i8 16)
-        start (correct-bound lower)
-        end (correct-bound upper)]
+        start (correct lower)
+        end (correct upper)]
     [type start end]))
 
 (defn res2bin [result]
@@ -178,5 +188,6 @@
 
 (defn when2bin [conditions]
   (let [type (i8 22)
-        cond-count (i32 (count conditions))]
-    [type cond-count conditions]))
+        cond-count (i32 (count conditions))
+        conds (map rest conditions)]
+    [type cond-count conds]))

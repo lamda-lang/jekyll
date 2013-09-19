@@ -65,5 +65,9 @@
                                  (reverse (flatten (reverse bits))))))
         first-bytes (map #(bits2byte (reverse (conj % 1)))
                          (butlast degen-bytes))
-        last-byte (bits2byte (reverse (conj (last degen-bytes) 0)))]
+        last-byte (bits2byte (if-let [lb (last degen-bytes)]
+                               (reverse (conj (last degen-bytes) 0))
+                               [0 0 0 0 0 0 0 0]))
+
+        ]
     (byte-array (conj (vec first-bytes) last-byte))))

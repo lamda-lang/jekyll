@@ -8,7 +8,7 @@
 
 
 
-(defn correct-bound [b]
+(defn- correct-bound [b]
   (if (= b "..")
     nil
     (let [[k v] b] {k v})))
@@ -76,24 +76,25 @@
             [v] vs]
         (case k
           :String (str2bin v)
-;          :Token (token2bin v)
+          :Token (token2bin v)
           :Integer (int2bin (. Integer parseInt v))
           :Float (float2bin (. Float parseFloat v))
           :Nil (nil2bin)
           :Boolean (if (= v "true") (true2bin) (false2bin))
-;          :Result (res2bin v)
-;          :List (list2bin v)
-;          :Map (map2bin v)
-;         :Set (set2bin v)
+          :Result (res2bin vs)
+          :List (list2bin v)
+          :Map (map2bin v)
+          :Set (set2bin v)
 ;         :ListComprehension (list-comp2bin v)
-;          :MapComprehension (map-comp2bin v)
-;          :SetComprehension (set-comp2bin v)
-;          :Do (do2bin v)
-;          :Case (case2bin v)
-;          :When (when2bin v)
-;          :Range (rng2bin (first vs) (last vs))
-;          :Protocol (protocol2bin v)
-;          :Type (type2bin v)
+;         :MapComprehension (map-comp2bin v)
+;         :SetComprehension (set-comp2bin v)
+          :Lamda (lambda2bin vs)
+          :Do (do2bin vs)
+          :Case (case2bin vs)
+          :When (when2bin vs)
+          :Range (rng2bin (first vs) (last vs))
+          :Protocol (protocol2bin vs)
+          :Type (type2bin vs)
           (rest n)))
       (id2bin (rest n)))
     n))
@@ -110,10 +111,10 @@
   [tree]
   (apply join-byte-arrays (flatten tree)))
 
-(-> "a = b"
+(-> "map = protocol f(x) end"
            parse
            collapse
-           binarize-expressions
+       binarize-expressions
            )
 
 (defn simplify-collection [matched n]

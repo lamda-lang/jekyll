@@ -13,11 +13,11 @@ Result = ( Identifier | Result | Lamda ) <'('>  <_*> [Expressions <_*>] <')'>
 Lamda = <'('> <_*> Args <':'> <_*> Expression <_*> <')'>
 Where = <'where'> <_+> (DefinitionAll <_*>)* <'end'>
 When = <'when'> <_+> (KeyValue <_*>)* <'end'>
-Case = <'case'> <_+> Identifier <_+> (Expression [<_+> Guard] <_*> <':'> <_*> Expression <_*>)* <'end'>
+Case = <'case'> <_+> Identifier <_+> (Branch <_+>)* <'end'>
 Identifier = Component (<'.'> Component)*
 Guard = <'if'> <_+> Expression
 Do = <'do'> <_+> (DefinitionAll <_*>)*  <'end'>
-Branch = Guard <_*> <'='> <_*> Expression
+Branch = Expression [<_+> Guard] <_*> <':'> <_*> Expression
 Namespace = (Identifier <'.'>)* Identifier
 Use = <'use'> <_+> Namespace [<_+> ('only'|'hide') (<_+> Identifier)+ ]
 Import = <'import'> <_+> Namespace [<_+> 'as' <_+> Identifier ]
